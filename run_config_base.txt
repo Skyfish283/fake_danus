@@ -1,0 +1,88 @@
+# Run configuration for the agentic mathematical research system.
+#
+# Fill in at least one API key, then run:
+#
+#     cd C:\Users\samfe\OneDrive\Desktop
+#     python -m math_agent
+#
+# The command line takes no arguments: everything about a run lives here.
+# See run_config.example.toml for the documented template.
+
+
+[run]
+# main | baseline_a | baseline_b | baselines_both
+mode = "main"
+
+problem = """
+
+"""
+
+problem_file = ""
+tag = ""
+resume = "C:/Users/samfe/OneDrive/Desktop/math_agent/runs/20260823-214638"
+
+
+[budget]
+max_planner_calls = 1000
+max_worker_calls = 1000
+max_wall_clock_seconds = 10000
+max_concurrent_workers = 6
+
+
+[models]
+# gemini | glm  — whole run uses one provider; do not mix IDs across providers
+provider = "gemini"
+# gemini-3.7-flash | gemini-3.6-flash | gemini-3.5-flash | gemini-3.5-flash-lite | adaptive
+# glm-4.7-flash | adaptive
+planner = "adaptive"
+explorer = "adaptive"
+mathematician = "adaptive"
+skeptic = "adaptive"
+verifier = "adaptive"
+baseline = "adaptive"
+
+
+[thinking]
+# LOW | MEDIUM | HIGH
+planner = "HIGH"
+explorer = "HIGH"
+mathematician = "HIGH"
+skeptic = "HIGH"
+verifier = "HIGH"
+
+
+[api_keys]
+# A blank role falls back to `default`, then to GEMINI_API_KEY (gemini) or
+# ZAI_API_KEY (glm).
+# The six worker slots share these three worker keys:
+#   explorer + flex_1, mathematician + flex_2, skeptic + flex_3.
+# Verifier has no key of its own; it bills whichever flex slot runs it.
+default = ""
+planner = ""
+explorer = ""
+mathematician = ""
+skeptic = ""
+baseline = ""
+
+
+[adaptive]
+ladder = [
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+]
+cooldown_seconds = 180
+
+
+[literature]
+openalex_mailto = "math-agent-prototype@example.com"
+search_result_limit = 8
+
+
+[viewer]
+# Live view of the research graph in a browser, at 127.0.0.1 only.
+enabled = true
+port = 8765          # 0 picks any free port
+open_browser = true
+poll_ms = 1000       # how often the page asks for changes

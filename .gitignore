@@ -1,0 +1,6 @@
+# Holds API keys inline; only run_config.example.toml is safe to commit.
+run_config.toml
+
+runs/
+__pycache__/
+*.pyc
