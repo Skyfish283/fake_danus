@@ -6,11 +6,14 @@ proof attacks, hunts for obstacles and counterexamples, searches the
 literature, and keeps a persistent research graph of everything it has
 considered — deciding continuously what to look at next.
 
-A planner acts as research director. Three worker roles (Explorer,
-Mathematician, Skeptic) are independent sources of ideas. The graph is research
-memory, not a fact database. An asyncio event loop lets the director react the
-moment any single worker or literature call finishes, instead of running fixed
-rounds. Each role has its own model, thinking level and API key.
+A planner acts as research director. Six specialized worker roles operate as
+independent sources of ideas: **Searcher** (literature retrieval), **Toy Example**
+(concrete constructions), **Counterexample** (falsification attempts),
+**Decomposer** (subgoal planning), **Sketcher** (proof sketches and calculations),
+and **Verifier** (claim validation). The graph is research memory, not a fact
+database. An asyncio event loop lets the director react the moment any single
+worker or literature call finishes, instead of running fixed rounds. Each role
+has its own model, thinking level and API key.
 
 ## Install
 
@@ -36,7 +39,7 @@ the live file is gitignored so an inline key never lands in a repo.
 | --- | --- |
 | `[run]` | `mode`, the problem (inline or `problem_file`), `tag`, `resume` |
 | `[budget]` | The three caps plus `max_concurrent_workers` |
-| `[models]` | One model per role, or `adaptive` |
+| `[models]` | One model per role, or `adaptive`. Roles: `planner`, `explorer`, `mathematician`, `skeptic`, `verifier`, `baseline` |
 | `[thinking]` | `LOW` / `MEDIUM` / `HIGH` reasoning depth per role |
 | `[api_keys]` | A key per role, or a shared `default` |
 | `[adaptive]` | The fallback ladder and its cooldown |
@@ -46,9 +49,22 @@ the live file is gitignored so an inline key never lands in a repo.
 `mode` selects the entry point: `main` for the full system, or `baseline_a`,
 `baseline_b`, `baselines_both` for the comparison arms.
 
+### Worker roles
+
+The six specialized workers replace the old Explorer/Mathematician/Skeptic triad:
+
+| Role | Function | Bills API key pool |
+| --- | --- | --- |
+| `searcher` | Literature retrieval, known theorems with hypotheses, search queries | `explorer` |
+| `toy_example` | Construct small/degenerate examples, verify assumptions hold | `explorer` |
+| `counterexample` | Falsify claims by constructing counter-instances | `skeptic` |
+| `decomposer` | Propose multiple subgoal decomposition plans | `mathematician` |
+| `sketcher` | Proof sketches and simple calculations for subgoals | `mathematician` |
+| `verifier` | Check claimed proofs/lemmas step-by-step; verdict HOLDS/GAP/FALSE | `explorer` |
+
 ### Models
 
-Each of `planner`, `explorer`, `mathematician`, `skeptic` and `baseline` takes
+Each of `planner`, `explorer`, `mathematician`, `skeptic`, `verifier` and `baseline` takes
 one of:
 
 | Value | Notes |
@@ -58,6 +74,8 @@ one of:
 | `gemini-3.5-flash` | |
 | `gemini-3.5-flash-lite` | Cheapest, highest availability |
 | `adaptive` | Walk the `[adaptive] ladder`, best model first |
+
+The six worker slots map onto three API key pools: `explorer` (searcher, toy_example, verifier), `mathematician` (decomposer, sketcher), and `skeptic` (counterexample).
 
 An `adaptive` role tries the strongest model on the ladder. When one answers 429
 or 503 it is demoted for `cooldown_seconds` and the call steps down immediately
@@ -72,6 +90,11 @@ A role uses its own key, else `[api_keys].default`, else the `GEMINI_API_KEY`
 environment variable. Giving each role its own key keeps one project's quota
 from throttling the whole run. Keys are never printed or written into a run
 directory; the banner shows only a fingerprint such as `set (...1a2b)`.
+
+The six worker slots share three API key pools:
+- `explorer` pool: searcher, toy_example, verifier
+- `mathematician` pool: decomposer, sketcher  
+- `skeptic` pool: counterexample
 
 ## Run
 
@@ -167,7 +190,7 @@ Aggregates all exploration artifacts into a single dossier:
 - Run metadata, timing, models, and token consumption
 - Director's synthesis from `summary.md`
 - Complete research graph inventory organized by status
-- Full, unabridged worker derivations and formulas from Mathematician, Explorer, and Skeptic
+- Full, unabridged worker derivations and formulas from all six specialized workers (Searcher, Toy Example, Counterexample, Decomposer, Sketcher, Verifier)
 - Retrieved literature and paper searches
 - Preceded by a rigorous system prompt instructing any frontier LLM (e.g., Gemini 1.5 Pro, Claude 3.5 Sonnet, GPT-4o) to synthesize the raw experimental findings into a formal, publication-grade mathematical research report.
 
@@ -192,9 +215,9 @@ on the same problem, and should be given the same models as arm C so that any
 difference is architectural:
 
 - `mode = "baseline_a"` — one Gemini call
-- `mode = "baseline_b"` — 3 workers in parallel, no graph, no event loop
+- `mode = "baseline_b"` — 3 workers in parallel (searcher, sketcher, counterexample), no graph, no event loop
 - `mode = "baselines_both"` — both arms in one run
-- `mode = "main"` — arm C, the full system
+- `mode = "main"` — arm C, the full system with six specialized workers
 
 Then rate arm A, arm B and arm C on novelty, usefulness, diversity of
 approaches, obstacles identified, literature found, and whether the system found
@@ -216,7 +239,9 @@ result arrives first and can change strategy before the others finish.
 
 Nothing a worker says is treated as true. Every claim node carries a status:
 `IDEA`, `PROMISING`, `UNVERIFIED`, `OBSTACLE`, `DEAD_END`, `REJECTED`,
-`POTENTIALLY_RELEVANT`, and a `created_by` field for provenance.
+`POTENTIALLY_RELEVANT`, and a `created_by` field for provenance indicating which
+specialized worker (searcher, toy_example, counterexample, decomposer, sketcher,
+verifier) generated it.
 
 ## Cost control
 
@@ -245,8 +270,8 @@ math_agent/
   gemini_client.py   shared async Gemini wrapper, one client per API key
   viewer/            live graph view: local server plus a single HTML page
   baselines.py       comparison arms A and B
-  agent/             planner, action schema, prompts
-  workers/           explorer, mathematician, skeptic
+  agent/             planner, action schema, prompts (six worker role prompts)
+  workers/           six specialized roles: searcher, toy_example, counterexample, decomposer, sketcher, verifier
   graph/             research graph + JSON persistence
   tools/             openalex, semantic_scholar, arxiv, papers
   events/            event bus and supervisor loop

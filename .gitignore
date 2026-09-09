@@ -1,6 +1,16 @@
-# Holds API keys inline; only run_config.example.toml is safe to commit.
-run_config.toml
-
-runs/
+```gitignore
+# Python cache files
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Environment files
+.env
+.env.local
+*.env.*
+```
