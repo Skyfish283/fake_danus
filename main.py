@@ -22,10 +22,11 @@ from .events.event_loop import Event, Supervisor
 from .gemini_client import USAGE, set_note_sink
 from .graph.graph import ResearchGraph
 from .graph.storage import attach_autosave, load_graph
+from .models import get_all_key_roles
 from .run_log import RunLog, new_run_dir
 from .viewer import start_viewer
 
-MAIN_ROLES = ("planner",) + config.WORKER_KEY_ROLES
+MAIN_ROLES = ("planner",) + get_all_key_roles()
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

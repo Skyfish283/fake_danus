@@ -18,12 +18,26 @@ import time
 from typing import Iterable, Sequence
 
 # Roles that can be configured independently in run_config.toml under
-# [models] and [thinking]. Verifier has a model and thinking level but no
-# API key of its own: it always bills a flex slot's worker-key pool.
-ROLES = ("planner", "explorer", "mathematician", "skeptic", "verifier", "baseline")
+# [models] and [thinking]. All autonomous workers share the "worker" role.
+ROLES = ("planner", "worker", "baseline")
 
-# [api_keys] names. Verifier is deliberately absent.
-KEY_ROLES = ("planner", "explorer", "mathematician", "skeptic", "baseline")
+# [api_keys] names for the autonomous worker architecture.
+# Each worker slot gets its own key (worker_1, worker_2, ..., worker_6).
+# The number of worker keys should match max_concurrent_workers in [budget].
+KEY_ROLES = ("planner", "baseline")
+WORKER_KEY_PREFIX = "worker_"
+MAX_WORKERS = 6
+
+def get_worker_key_names() -> tuple[str, ...]:
+    """Return the list of worker key names based on MAX_WORKERS."""
+    return tuple(f"{WORKER_KEY_PREFIX}{i}" for i in range(1, MAX_WORKERS + 1))
+
+def get_all_key_roles() -> tuple[str, ...]:
+    """Return all API key role names including planner, baseline, and all workers."""
+    return KEY_ROLES + get_worker_key_names()
+
+# [api_keys] names for the autonomous worker architecture.
+ALL_KEY_ROLES = get_all_key_roles()
 
 # Whole-run switch in [models].provider. Mixing providers in one run is not allowed.
 PROVIDERS = ("gemini", "glm")
@@ -95,6 +109,11 @@ _ROLE_ALIASES = {
     "flex_5": "mathematician",
     "flex_6": "skeptic",
 }
+
+
+def worker_slot_to_key(slot_index: int) -> str:
+    """Map a worker slot index (0-based) to its API key name (e.g., worker_1)."""
+    return f"{WORKER_KEY_PREFIX}{slot_index + 1}"
 
 
 def known_models(provider: str = DEFAULT_PROVIDER) -> tuple[str, ...]:

@@ -1,13 +1,17 @@
-"""One Gemini call per worker, wrapped so a failure never kills the run."""
+"""One Gemini call per worker, wrapped so a failure never kills the run.
+
+Now supports autonomous multi-turn execution: workers receive a subproblem,
+create their own plan, select skills iteratively, and submit consolidated results.
+"""
 
 from __future__ import annotations
 
 import asyncio
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .. import config
-from ..agent.prompts import WORKER_PROMPTS
+from ..agent.prompts import WORKER_PROMPTS, AUTONOMOUS_WORKER_SYSTEM_PROMPT
 from ..gemini_client import generate
 
 # Every slot is flexible: the planner must set a role on each assignment.
@@ -26,28 +30,40 @@ PROMPT_ROLES = (
 )
 
 # Which run_config.toml role ([models], [thinking]) each prompt role is
-# configured against. The config keeps the original explorer/mathematician/
-# skeptic/verifier names so existing configs keep working; the baselines
-# (arm B) also still run under those names.
+# configured against. All autonomous worker skills share the single "worker" role.
 PROMPT_CONFIG_ROLE = {
-    "searcher": "explorer",
-    "toy_example": "explorer",
-    "counterexample": "skeptic",
-    "decomposer": "mathematician",
-    "sketcher": "mathematician",
-    "verifier": "verifier",
+    "searcher": "worker",
+    "toy_example": "worker",
+    "counterexample": "worker",
+    "decomposer": "worker",
+    "sketcher": "worker",
+    "verifier": "worker",
 }
 
-# Which [api_keys] pool each prompt role bills. The verifier has no key of
-# its own and bills the explorer pool.
+# Which [api_keys] pool each prompt role bills. 
+# For autonomous workers, the key depends on the worker slot index.
+# Each worker slot (0-based) uses worker_1, worker_2, ..., worker_6 keys.
 PROMPT_KEY_ROLE = {
-    "searcher": "explorer",
-    "toy_example": "explorer",
-    "counterexample": "skeptic",
-    "decomposer": "mathematician",
-    "sketcher": "mathematician",
-    "verifier": "explorer",
+    "searcher": "worker",  # Will be overridden by slot-specific key in autonomous mode
+    "toy_example": "worker",
+    "counterexample": "worker",
+    "decomposer": "worker",
+    "sketcher": "worker",
+    "verifier": "worker",
 }
+
+
+def get_key_for_worker_slot(slot_index: int) -> str:
+    """Get the API key role name for a worker slot (0-based index).
+    
+    Args:
+        slot_index: The worker slot index (0-based)
+        
+    Returns:
+        The API key role name (e.g., 'worker_1', 'worker_2', etc.)
+    """
+    from ..models import worker_slot_to_key
+    return worker_slot_to_key(slot_index)
 
 # Bounds how many worker calls are in flight at once, independently of how
 # many tasks the planner assigns.
@@ -66,6 +82,27 @@ class WorkerOutcome:
     error: str = ""
     elapsed: float = 0.0
     slot: str = ""
+
+
+@dataclass
+class SkillCall:
+    """Records one skill invocation during autonomous worker execution."""
+    skill: str
+    input_task: str
+    output: str
+    elapsed: float = 0.0
+
+
+@dataclass
+class AutonomousWorkerResult:
+    """Result of autonomous worker execution with multiple skill calls."""
+    task_id: str
+    slot: str
+    initial_task: str
+    final_result: str
+    skill_calls: list[SkillCall] = field(default_factory=list)
+    total_elapsed: float = 0.0
+    error: str = ""
 
 
 def resolve_assignment(slot: str, requested_role: str = "") -> tuple[str | None, str]:
@@ -159,3 +196,170 @@ async def run_worker(
         elapsed=time.monotonic() - started,
         slot=slot,
     )
+
+
+def build_autonomous_worker_prompt(
+    problem: str, context: str, task: str, progress_history: list[str]
+) -> str:
+    """Build prompt for autonomous worker with progress tracking."""
+    sections = [f"# Problem\n\n{problem.strip()}"]
+    if context.strip():
+        sections.append(f"# Current relevant research\n\n{context.strip()}")
+    
+    sections.append(f"# Your subtask\n\n{task.strip()}")
+    
+    if progress_history:
+        sections.append("# Progress so far\n\n" + "\n\n".join(progress_history))
+    
+    sections.append(
+        "\n\nDecide your next action: continue with a skill call, or complete the task."
+    )
+    return "\n\n".join(sections)
+
+
+async def run_autonomous_worker(
+    *,
+    task_id: str,
+    slot: str,
+    task: str,
+    problem: str,
+    context: str = "",
+    max_iterations: int = 5,
+) -> AutonomousWorkerResult:
+    """Run an autonomous worker that iteratively selects skills and executes them.
+    
+    The worker:
+    1. Receives the initial task
+    2. Decides which skill to use (or completes if done)
+    3. Executes the chosen skill
+    4. Reviews progress and repeats until complete or max iterations
+    
+    Returns consolidated results for the planner.
+    """
+    started = time.monotonic()
+    skill_calls: list[SkillCall] = []
+    progress_history: list[str] = []
+    
+    # Determine the API key role for this worker slot
+    # Extract slot index from slot name (e.g., "flex_1" -> 0, "flex_2" -> 1)
+    slot_index = 0
+    if slot.startswith("flex_"):
+        try:
+            slot_index = int(slot.split("_")[1]) - 1
+        except (ValueError, IndexError):
+            slot_index = 0
+    worker_key_role = get_key_for_worker_slot(slot_index)
+    
+    try:
+        async with _semaphore:
+            for iteration in range(max_iterations):
+                # Build prompt with current progress
+                prompt = build_autonomous_worker_prompt(
+                    problem=problem,
+                    context=context,
+                    task=task,
+                    progress_history=progress_history,
+                )
+                
+                # Get worker's decision using slot-specific API key
+                decision_text = await generate(
+                    prompt,
+                    role="searcher",
+                    key_role=worker_key_role,
+                    model=config.WORKER_MODELS["worker"],
+                    system_instruction=AUTONOMOUS_WORKER_SYSTEM_PROMPT,
+                    thinking_level=config.WORKER_THINKING_LEVELS["worker"],
+                    max_output_tokens=config.WORKER_MAX_OUTPUT_TOKENS,
+                )
+                
+                # Parse decision (simple JSON extraction)
+                import json
+                try:
+                    decision = json.loads(decision_text)
+                except json.JSONDecodeError:
+                    # Try to extract JSON from text
+                    import re
+                    match = re.search(r'\\{[^}]+\\}', decision_text, re.DOTALL)
+                    if match:
+                        decision = json.loads(match.group())
+                    else:
+                        raise ValueError("Could not parse decision JSON")
+                
+                if decision.get("decision") == "complete":
+                    # Worker is done, return consolidated result
+                    return AutonomousWorkerResult(
+                        task_id=task_id,
+                        slot=slot,
+                        initial_task=task,
+                        final_result=decision.get("final_result", decision_text),
+                        skill_calls=skill_calls,
+                        total_elapsed=time.monotonic() - started,
+                    )
+                
+                # Continue: execute the chosen skill
+                skill_choice = decision.get("skill_choice")
+                skill_input = decision.get("skill_input")
+                
+                if not skill_choice or not skill_input:
+                    progress_history.append(
+                        f"Iteration {iteration + 1}: Invalid decision (missing skill_choice or skill_input)"
+                    )
+                    continue
+                
+                if skill_choice not in WORKER_PROMPTS:
+                    progress_history.append(
+                        f"Iteration {iteration + 1}: Unknown skill {skill_choice!r}"
+                    )
+                    continue
+                
+                # Execute the skill
+                skill_started = time.monotonic()
+                try:
+                    skill_output = await generate(
+                        build_worker_prompt(problem, context, skill_input),
+                        role=skill_choice,
+                        key_role=PROMPT_KEY_ROLE[skill_choice],
+                        model=config.WORKER_MODELS[PROMPT_CONFIG_ROLE[skill_choice]],
+                        system_instruction=WORKER_PROMPTS[skill_choice],
+                        thinking_level=config.WORKER_THINKING_LEVELS[PROMPT_CONFIG_ROLE[skill_choice]],
+                        max_output_tokens=config.WORKER_MAX_OUTPUT_TOKENS,
+                    )
+                    
+                    skill_elapsed = time.monotonic() - skill_started
+                    skill_calls.append(SkillCall(
+                        skill=skill_choice,
+                        input_task=skill_input,
+                        output=skill_output,
+                        elapsed=skill_elapsed,
+                    ))
+                    progress_history.append(
+                        f"Iteration {iteration + 1}: Used {skill_choice}\nInput: {skill_input}\nOutput: {skill_output[:500]}..."
+                    )
+                    
+                except Exception as exc:
+                    progress_history.append(
+                        f"Iteration {iteration + 1}: Skill {skill_choice} failed: {type(exc).__name__}: {exc}"
+                    )
+            
+            # Max iterations reached without completion
+            return AutonomousWorkerResult(
+                task_id=task_id,
+                slot=slot,
+                initial_task=task,
+                final_result="Max iterations reached. Progress summary:\n\n" + "\n\n".join(progress_history),
+                skill_calls=skill_calls,
+                total_elapsed=time.monotonic() - started,
+            )
+            
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
+        return AutonomousWorkerResult(
+            task_id=task_id,
+            slot=slot,
+            initial_task=task,
+            final_result="",
+            skill_calls=skill_calls,
+            total_elapsed=time.monotonic() - started,
+            error=f"{type(exc).__name__}: {exc}",
+        )

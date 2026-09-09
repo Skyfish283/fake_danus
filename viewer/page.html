@@ -403,7 +403,10 @@ function makeNode(id, data) {
   group.addEventListener("pointerdown", (ev) => startDrag(ev, node));
   group.addEventListener("click", (ev) => {
     ev.stopPropagation();
-    select(node.id);
+    if (!clickSuppressed) {
+      select(node.id);
+    }
+    clickSuppressed = false;
   });
 
   flash(node);
@@ -712,6 +715,7 @@ function toWorld(clientX, clientY) {
 }
 
 let drag = null;
+let clickSuppressed = false;
 
 function startDrag(ev, node) {
   ev.preventDefault();
@@ -720,6 +724,7 @@ function startDrag(ev, node) {
   drag = { node, dx: node.x - world.x, dy: node.y - world.y, moved: false };
   node.pinned = true;
   svg.setPointerCapture(ev.pointerId);
+  clickSuppressed = false;
 }
 
 let pan = null;
@@ -739,6 +744,7 @@ svg.addEventListener("pointermove", (ev) => {
     drag.node.vx = 0;
     drag.node.vy = 0;
     drag.moved = true;
+    clickSuppressed = true;
     userMoved = true;
   } else if (pan) {
     view.x = pan.vx + (ev.clientX - pan.x);
@@ -752,6 +758,7 @@ function endPointer(ev) {
   if (drag) {
     if (!drag.moved && drag.node.id !== "problem") drag.node.pinned = false;
     drag = null;
+    clickSuppressed = false;
   }
   pan = null;
   svg.classList.remove("panning");
