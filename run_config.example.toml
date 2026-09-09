@@ -33,11 +33,11 @@ resume = ""
 
 [budget]
 # Whichever cap trips first ends the run cleanly and still writes summary.md.
-# Six autonomous worker slots share one API key; keep concurrency at 6.
+# Each autonomous worker slot uses its own API key (worker_1, worker_2, etc.).
 max_planner_calls = 40
 max_worker_calls = 30
 max_wall_clock_seconds = 1800
-max_concurrent_workers = 6   # six autonomous worker slots sharing one key
+max_concurrent_workers = 6   # number of worker keys needed in [api_keys]
 
 
 [models]
@@ -65,14 +65,19 @@ worker = "MEDIUM"
 
 
 [api_keys]
-# One key per pool. All six autonomous worker slots share the single worker key.
-# The planner has its own key. Baseline uses the baseline key.
+# Planner has its own key. Each worker slot gets its own key.
+# Number of worker keys should match max_concurrent_workers in [budget].
 # A blank role falls back to `default`, then to GEMINI_API_KEY when
 # provider = "gemini", or ZAI_API_KEY when provider = "glm".
 # Keys are never printed or written into a run directory.
 default = ""
 planner = ""
-worker = ""
+worker_1 = ""
+worker_2 = ""
+worker_3 = ""
+worker_4 = ""
+worker_5 = ""
+worker_6 = ""
 baseline = ""
 
 

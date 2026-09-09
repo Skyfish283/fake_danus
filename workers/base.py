@@ -40,16 +40,30 @@ PROMPT_CONFIG_ROLE = {
     "verifier": "worker",
 }
 
-# Which [api_keys] pool each prompt role bills. All autonomous workers share
-# the single "worker" key pool.
+# Which [api_keys] pool each prompt role bills. 
+# For autonomous workers, the key depends on the worker slot index.
+# Each worker slot (0-based) uses worker_1, worker_2, ..., worker_6 keys.
 PROMPT_KEY_ROLE = {
-    "searcher": "worker",
+    "searcher": "worker",  # Will be overridden by slot-specific key in autonomous mode
     "toy_example": "worker",
     "counterexample": "worker",
     "decomposer": "worker",
     "sketcher": "worker",
     "verifier": "worker",
 }
+
+
+def get_key_for_worker_slot(slot_index: int) -> str:
+    """Get the API key role name for a worker slot (0-based index).
+    
+    Args:
+        slot_index: The worker slot index (0-based)
+        
+    Returns:
+        The API key role name (e.g., 'worker_1', 'worker_2', etc.)
+    """
+    from ..models import worker_slot_to_key
+    return worker_slot_to_key(slot_index)
 
 # Bounds how many worker calls are in flight at once, independently of how
 # many tasks the planner assigns.
@@ -226,6 +240,16 @@ async def run_autonomous_worker(
     skill_calls: list[SkillCall] = []
     progress_history: list[str] = []
     
+    # Determine the API key role for this worker slot
+    # Extract slot index from slot name (e.g., "flex_1" -> 0, "flex_2" -> 1)
+    slot_index = 0
+    if slot.startswith("flex_"):
+        try:
+            slot_index = int(slot.split("_")[1]) - 1
+        except (ValueError, IndexError):
+            slot_index = 0
+    worker_key_role = get_key_for_worker_slot(slot_index)
+    
     try:
         async with _semaphore:
             for iteration in range(max_iterations):
@@ -237,11 +261,11 @@ async def run_autonomous_worker(
                     progress_history=progress_history,
                 )
                 
-                # Get worker's decision
+                # Get worker's decision using slot-specific API key
                 decision_text = await generate(
                     prompt,
-                    role="searcher",  # Use worker key pool for autonomous workers
-                    key_role="worker",
+                    role="searcher",
+                    key_role=worker_key_role,
                     model=config.WORKER_MODELS["worker"],
                     system_instruction=AUTONOMOUS_WORKER_SYSTEM_PROMPT,
                     thinking_level=config.WORKER_THINKING_LEVELS["worker"],

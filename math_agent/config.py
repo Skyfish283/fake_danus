@@ -61,8 +61,11 @@ model_router.apply_config(
 # Config roles: the names run_config.toml uses under [models], [thinking] and
 # [api_keys]. All autonomous workers share the single "worker" role.
 WORKER_ROLES = ("worker",)
-# Single API-key pool for all autonomous workers.
-WORKER_KEY_ROLES = ("worker",)
+
+def get_worker_key_for_slot(slot_index: int) -> str:
+    """Get the API key role name for a worker slot (0-based index)."""
+    from .models import worker_slot_to_key
+    return worker_slot_to_key(slot_index)
 
 # --- Models -----------------------------------------------------------------
 # Any of these may be the string "adaptive", in which case the model is chosen
