@@ -15,6 +15,7 @@ from typing import Any, Sequence
 
 from .models import (
     ADAPTIVE,
+    ALL_KEY_ROLES,
     DEFAULT_LADDER,
     KEY_ROLES,
     PROVIDERS,
@@ -35,10 +36,7 @@ THINKING_LEVELS = ("LOW", "MEDIUM", "HIGH")
 DEFAULT_MODELS: dict[str, str] = {role: "gemini-3.5-flash-lite" for role in ROLES}
 DEFAULT_THINKING: dict[str, str] = {
     "planner": "HIGH",
-    "explorer": "MEDIUM",
-    "mathematician": "MEDIUM",
-    "skeptic": "HIGH",
-    "verifier": "HIGH",
+    "worker": "MEDIUM",
     "baseline": "HIGH",
 }
 
@@ -52,7 +50,7 @@ _SECTIONS = {
     ),
     "models": ("provider",) + ROLES,
     "thinking": ROLES,
-    "api_keys": ("default",) + KEY_ROLES,
+    "api_keys": ("default",) + ALL_KEY_ROLES,
     "adaptive": ("ladder", "cooldown_seconds"),
     "literature": ("openalex_mailto", "search_result_limit"),
     "viewer": ("enabled", "port", "open_browser", "poll_ms"),
@@ -103,11 +101,10 @@ class RunConfig:
     def roles_in_use(self) -> tuple[str, ...]:
         """Roles a run in this mode will actually call.
 
-        Verifier is omitted: it has no API key of its own. Smoke-test the
-        verifier model separately with a flex-slot key pool.
+        For main mode: planner and worker roles are used.
         """
         if self.mode == "main":
-            return ("planner", "explorer", "mathematician", "skeptic")
+            return ("planner", "worker")
         if self.mode == "baseline_a":
             return ("baseline",)
         return KEY_ROLES
@@ -312,7 +309,7 @@ def render_redacted_toml(config: RunConfig, options: RunOptions | None = None) -
     lines += ["", "[api_keys]"]
     lines += [
         f'{role} = "{key_fingerprint(config.api_keys.get(role, ""))}"'
-        for role in ("default",) + KEY_ROLES
+        for role in ("default",) + ALL_KEY_ROLES
     ]
     lines += [
         "",
@@ -447,11 +444,23 @@ def _read_thinking(section: dict[str, Any], warnings: list[str]) -> dict[str, st
 
 
 def _read_api_keys(section: dict[str, Any], warnings: list[str]) -> dict[str, str]:
+    """Read API keys from config section, supporting worker_1 through worker_N."""
+    from .models import MAX_WORKERS, WORKER_KEY_PREFIX
+    
     keys: dict[str, str] = {}
+    # Read default and standard roles
     for role in ("default",) + KEY_ROLES:
         value = _text(section, role, "", warnings, "api_keys")
         if value:
             keys[role] = value
+    
+    # Read worker-specific keys (worker_1, worker_2, ..., worker_N)
+    for i in range(1, MAX_WORKERS + 1):
+        worker_key = f"{WORKER_KEY_PREFIX}{i}"
+        value = _text(section, worker_key, "", warnings, "api_keys")
+        if value:
+            keys[worker_key] = value
+    
     return keys
 
 

@@ -15,6 +15,37 @@ database. An asyncio event loop lets the director react the moment any single
 worker or literature call finishes, instead of running fixed rounds. Each role
 has its own model, thinking level and API key.
 
+## Autonomous Worker Mode (New)
+
+Workers now operate autonomously on subproblems assigned by the planner. Instead
+of executing a single skill call and returning results immediately, each worker:
+
+1. Receives a subtask from the planner
+2. Creates an internal plan for tackling it
+3. Iteratively selects and executes skills (up to 5 iterations max)
+4. Tracks progress across iterations
+5. Submits consolidated findings back to the planner when complete
+
+This allows workers to explore subproblems more deeply before reporting back,
+producing richer, more synthesized results rather than isolated skill outputs.
+
+### Worker Autonomous Loop
+
+Each autonomous worker follows this decision cycle:
+- **Analyze**: Review the task and current progress
+- **Choose**: Select one of six skills based on what's needed next
+- **Execute**: Run the chosen skill with a specific input
+- **Evaluate**: Decide whether the subtask is complete or needs more work
+- **Report**: When done, synthesize all findings into a coherent summary
+
+Skills available to autonomous workers:
+- `searcher` - Find relevant literature and theorems
+- `toy_example` - Build intuition through simple examples
+- `counterexample` - Test claims by attempting falsification
+- `decomposer` - Break complex goals into ordered subgoals
+- `sketcher` - Attempt proof sketches and calculations
+- `verifier` - Check whether arguments hold or have gaps
+
 ## Install
 
 ```powershell
