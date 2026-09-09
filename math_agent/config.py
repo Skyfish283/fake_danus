@@ -59,13 +59,10 @@ model_router.apply_config(
 )
 
 # Config roles: the names run_config.toml uses under [models], [thinking] and
-# [api_keys]. The worker prompt roles (searcher, toy_example, counterexample,
-# decomposer, sketcher, verifier) map onto these via
-# workers.base.PROMPT_CONFIG_ROLE; the explorer/mathematician/skeptic names
-# survive as the three worker API-key pools (and the baseline-B roles).
-WORKER_ROLES = ("explorer", "mathematician", "skeptic", "verifier")
-# The three API-key pools the six worker slots share. Verifier has no key.
-WORKER_KEY_ROLES = ("explorer", "mathematician", "skeptic")
+# [api_keys]. All autonomous workers share the single "worker" role.
+WORKER_ROLES = ("worker",)
+# Single API-key pool for all autonomous workers.
+WORKER_KEY_ROLES = ("worker",)
 
 # --- Models -----------------------------------------------------------------
 # Any of these may be the string "adaptive", in which case the model is chosen

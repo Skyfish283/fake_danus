@@ -30,27 +30,25 @@ PROMPT_ROLES = (
 )
 
 # Which run_config.toml role ([models], [thinking]) each prompt role is
-# configured against. The config keeps the original explorer/mathematician/
-# skeptic/verifier names so existing configs keep working; the baselines
-# (arm B) also still run under those names.
+# configured against. All autonomous worker skills share the single "worker" role.
 PROMPT_CONFIG_ROLE = {
-    "searcher": "explorer",
-    "toy_example": "explorer",
-    "counterexample": "skeptic",
-    "decomposer": "mathematician",
-    "sketcher": "mathematician",
-    "verifier": "verifier",
+    "searcher": "worker",
+    "toy_example": "worker",
+    "counterexample": "worker",
+    "decomposer": "worker",
+    "sketcher": "worker",
+    "verifier": "worker",
 }
 
-# Which [api_keys] pool each prompt role bills. The verifier has no key of
-# its own and bills the explorer pool.
+# Which [api_keys] pool each prompt role bills. All autonomous workers share
+# the single "worker" key pool.
 PROMPT_KEY_ROLE = {
-    "searcher": "explorer",
-    "toy_example": "explorer",
-    "counterexample": "skeptic",
-    "decomposer": "mathematician",
-    "sketcher": "mathematician",
-    "verifier": "explorer",
+    "searcher": "worker",
+    "toy_example": "worker",
+    "counterexample": "worker",
+    "decomposer": "worker",
+    "sketcher": "worker",
+    "verifier": "worker",
 }
 
 # Bounds how many worker calls are in flight at once, independently of how
@@ -242,11 +240,11 @@ async def run_autonomous_worker(
                 # Get worker's decision
                 decision_text = await generate(
                     prompt,
-                    role="searcher",  # Use explorer key pool for autonomous workers
-                    key_role="explorer",
-                    model=config.WORKER_MODELS["explorer"],
+                    role="searcher",  # Use worker key pool for autonomous workers
+                    key_role="worker",
+                    model=config.WORKER_MODELS["worker"],
                     system_instruction=AUTONOMOUS_WORKER_SYSTEM_PROMPT,
-                    thinking_level=config.WORKER_THINKING_LEVELS["explorer"],
+                    thinking_level=config.WORKER_THINKING_LEVELS["worker"],
                     max_output_tokens=config.WORKER_MAX_OUTPUT_TOKENS,
                 )
                 

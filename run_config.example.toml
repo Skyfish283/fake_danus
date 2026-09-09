@@ -33,11 +33,11 @@ resume = ""
 
 [budget]
 # Whichever cap trips first ends the run cleanly and still writes summary.md.
-# Six worker slots share three API keys; keep concurrency at 6 so all can run.
+# Six autonomous worker slots share one API key; keep concurrency at 6.
 max_planner_calls = 40
 max_worker_calls = 30
 max_wall_clock_seconds = 1800
-max_concurrent_workers = 6   # six worker slots; they share three API keys
+max_concurrent_workers = 6   # six autonomous worker slots sharing one key
 
 
 [models]
@@ -52,10 +52,8 @@ provider = "gemini"
 # adaptive walks the [adaptive] ladder for that provider, stepping down when a
 # model is busy and stepping back up once it recovers
 planner = "adaptive"
-explorer = "gemini-3.5-flash"
-mathematician = "gemini-3.5-flash"
-skeptic = "gemini-3.5-flash-lite"
-verifier = "gemini-3.5-flash"
+# Worker models are used by autonomous workers (all slots share explorer pool)
+worker = "gemini-3.5-flash"
 baseline = "gemini-3.5-flash"
 
 
@@ -63,24 +61,18 @@ baseline = "gemini-3.5-flash"
 # LOW, MEDIUM or HIGH. Gemini 3 Flash uses thinking_level. GLM-4.7-Flash
 # maps LOW to thinking off and MEDIUM/HIGH to thinking on (no reasoning_effort).
 planner = "HIGH"
-explorer = "MEDIUM"
-mathematician = "MEDIUM"
-skeptic = "HIGH"
-verifier = "HIGH"
+worker = "MEDIUM"
 
 
 [api_keys]
-# One key per pool. The six worker slots share the three worker keys:
-#   explorer + flex_1, mathematician + flex_2, skeptic + flex_3.
-# Verifier has no key of its own; it bills whichever flex slot runs it.
+# One key per pool. All six autonomous worker slots share the single worker key.
+# The planner has its own key. Baseline uses the baseline key.
 # A blank role falls back to `default`, then to GEMINI_API_KEY when
 # provider = "gemini", or ZAI_API_KEY when provider = "glm".
 # Keys are never printed or written into a run directory.
 default = ""
 planner = ""
-explorer = ""
-mathematician = ""
-skeptic = ""
+worker = ""
 baseline = ""
 
 

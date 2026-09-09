@@ -18,12 +18,11 @@ import time
 from typing import Iterable, Sequence
 
 # Roles that can be configured independently in run_config.toml under
-# [models] and [thinking]. Verifier has a model and thinking level but no
-# API key of its own: it always bills a flex slot's worker-key pool.
-ROLES = ("planner", "explorer", "mathematician", "skeptic", "verifier", "baseline")
+# [models] and [thinking]. All autonomous workers share the "worker" role.
+ROLES = ("planner", "worker", "baseline")
 
-# [api_keys] names. Verifier is deliberately absent.
-KEY_ROLES = ("planner", "explorer", "mathematician", "skeptic", "baseline")
+# [api_keys] names for the autonomous worker architecture.
+KEY_ROLES = ("planner", "worker", "baseline")
 
 # Whole-run switch in [models].provider. Mixing providers in one run is not allowed.
 PROVIDERS = ("gemini", "glm")

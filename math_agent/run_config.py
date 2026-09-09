@@ -35,10 +35,7 @@ THINKING_LEVELS = ("LOW", "MEDIUM", "HIGH")
 DEFAULT_MODELS: dict[str, str] = {role: "gemini-3.5-flash-lite" for role in ROLES}
 DEFAULT_THINKING: dict[str, str] = {
     "planner": "HIGH",
-    "explorer": "MEDIUM",
-    "mathematician": "MEDIUM",
-    "skeptic": "HIGH",
-    "verifier": "HIGH",
+    "worker": "MEDIUM",
     "baseline": "HIGH",
 }
 
@@ -103,11 +100,10 @@ class RunConfig:
     def roles_in_use(self) -> tuple[str, ...]:
         """Roles a run in this mode will actually call.
 
-        Verifier is omitted: it has no API key of its own. Smoke-test the
-        verifier model separately with a flex-slot key pool.
+        For main mode: planner and worker roles are used.
         """
         if self.mode == "main":
-            return ("planner", "explorer", "mathematician", "skeptic")
+            return ("planner", "worker")
         if self.mode == "baseline_a":
             return ("baseline",)
         return KEY_ROLES
