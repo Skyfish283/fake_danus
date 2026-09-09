@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Research graph</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #141a22;
+    --panel-2: #1b232d;
+    --line: #263140;
+    --text: #d8e0ea;
+    --muted: #7d8b9c;
+    --promising: #34d399;
+    --obstacle: #fbbf24;
+    --idea: #60a5fa;
+    --unverified: #93a3b6;
+    --paper: #c084fc;
+    --dead: #566070;
+    --rejected: #ef7c7c;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    flex: none;
+  }
+  header h1 { font-size: 13px; font-weight: 600; margin: 0; white-space: nowrap; }
+  #problem {
+    color: var(--muted);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #stats { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  #status-pill {
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    white-space: nowrap;
+    border: 1px solid var(--line);
+    color: var(--muted);
+  }
+  #status-pill.live { color: var(--promising); border-color: #245c46; }
+  #status-pill.done { color: var(--idea); border-color: #23415e; }
+  #status-pill.lost { color: var(--rejected); border-color: #5e2a2a; }
+
+  main { flex: 1; display: flex; min-height: 0; }
+
+  #canvas-wrap { position: relative; flex: 1; min-width: 0; }
+  svg { width: 100%; height: 100%; display: block; cursor: grab; }
+  svg.panning { cursor: grabbing; }
+
+  #toolbar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  button {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 4px 9px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  button:hover { border-color: #3a4a5e; }
+  button.on { color: #0d1117; background: var(--idea); border-color: var(--idea); }
+
+  aside {
+    width: 380px;
+    flex: none;
+    border-left: 1px solid var(--line);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  aside section { border-bottom: 1px solid var(--line); padding: 10px 12px; }
+  aside h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+
+  #legend { display: flex; flex-direction: column; gap: 3px; }
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    user-select: none;
+  }
+  .legend-row:hover { background: var(--panel-2); }
+  .legend-row.off { opacity: 0.35; }
+  .swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .legend-row span:nth-child(2) { flex: 1; }
+  .legend-count { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  #detail { flex: none; max-height: 42%; overflow: auto; }
+  #detail .empty { color: var(--muted); }
+  #detail .head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  #detail .id { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  #detail .content { white-space: pre-wrap; word-break: break-word; margin: 6px 0; }
+  #detail .meta { color: var(--muted); font-size: 12px; }
+  #detail ul { margin: 4px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+
+  #feed-section { flex: 1; display: flex; flex-direction: column; min-height: 0; border-bottom: 0; }
+  #feed { overflow: auto; flex: 1; font-size: 12px; }
+  .feed-row { display: flex; gap: 7px; padding: 2px 0; border-bottom: 1px solid #1b2229; }
+  .feed-row .t { color: #55616f; font-variant-numeric: tabular-nums; flex: none; }
+  .feed-row .who { flex: none; width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed-row .what { flex: 1; color: var(--muted); word-break: break-word; }
+  .who.planner { color: #67e8f9; }
+  .who.explorer { color: var(--promising); }
+  .who.mathematician { color: var(--obstacle); }
+  .who.skeptic { color: var(--paper); }
+  .who.literature { color: var(--idea); }
+  .feed-row.task_failed .what { color: var(--rejected); }
+
+  /* graph */
+  .edge { stroke: #3a4757; stroke-width: 1.2; fill: none; }
+  .edge.dashed { stroke-dasharray: 5 4; stroke: #7a5a5a; }
+  .edge.faded { opacity: 0.07; }
+  .node circle { stroke: #0d1117; stroke-width: 1.5; cursor: pointer; }
+  .node.root circle { stroke: #8b97a6; stroke-width: 2.5; }
+  .node.selected circle { stroke: #ffffff; stroke-width: 2.5; }
+  .node.faded { opacity: 0.07; pointer-events: none; }
+  .node text {
+    fill: var(--text);
+    font-size: 10px;
+    pointer-events: none;
+    paint-order: stroke;
+    stroke: #0d1117;
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  .node .snippet { fill: var(--muted); }
+  .node.fresh circle { animation: pulse 2.2s ease-out; }
+  @keyframes pulse {
+    0%   { stroke: #ffffff; stroke-width: 12; }
+    100% { stroke: #0d1117; stroke-width: 1.5; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Research graph</h1>
+  <div id="problem">waiting for the run...</div>
+  <div id="stats"></div>
+  <div id="status-pill">connecting</div>
+</header>
+
+<main>
+  <div id="canvas-wrap">
+    <svg id="canvas">
+      <defs>
+        <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4"
+                markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1 L 7 4 L 0 7 z" fill="#3a4757"></path>
+        </marker>
+        <marker id="arrow-dashed" viewBox="0 0 8 8" refX="7" refY="4"
+                markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1 L 7 4 L 0 7 z" fill="#7a5a5a"></path>
+        </marker>
+      </defs>
+      <g id="viewport">
+        <g id="edge-layer"></g>
+        <g id="node-layer"></g>
+      </g>
+    </svg>
+    <div id="toolbar">
+      <button id="btn-pause">Pause layout</button>
+      <button id="btn-fit">Fit</button>
+      <button id="btn-dead">Hide dead ends</button>
+      <button id="btn-unpin">Release pinned</button>
+    </div>
+  </div>
+
+  <aside>
+    <section>
+      <h2>Status</h2>
+      <div id="legend"></div>
+    </section>
+    <section id="detail">
+      <h2>Node</h2>
+      <div class="empty">Click a node to read it in full.</div>
+    </section>
+    <section id="feed-section">
+      <h2>Activity</h2>
+      <div id="feed"></div>
+    </section>
+  </aside>
+</main>
+
+<script>
+window.STATIC_STATE = {"changed": true, "run": "20260910-001719", "run_dir": "C:\\Users\\samfe\\OneDrive\\Desktop\\math_agent\\runs\\20260910-001719", "problem": "Call a function f : ℝ → ℝ angelic (resp. devilish) if there exist polynomials p and q with real coefficients such that for all real numbers x, f(x) is equal to p(⌊x⌋) + ⌊q(x)⌋ (resp. p(⌊x⌋) + ⌊q(x)⌋).\n \nFind the largest real number c with the following property: given functions f and g that are angelic and devilish respectively, if there is a real number s such that f(s) ≠ g(s), then there is a real number t such that |f(t) - g(t)| ≥ c.", "nodes": {"problem": {"id": "problem", "type": "problem", "content": "Call a function f : ℝ → ℝ angelic (resp. devilish) if there exist polynomials p and q with real coefficients such that for all real numbers x, f(x) is equal to p(⌊x⌋) + ⌊q(x)⌋ (resp. p(⌊x⌋) + ⌊q(x)⌋).\n \nFind the largest real number c with the following property: given functions f and g that are angelic and devilish respectively, if there is a real number s such that f(s) ≠ g(s), then there is a real number t such that |f(t) - g(t)| ≥ c.", "status": "UNVERIFIED", "created_by": "user", "created_at": 1788965239.1182795, "updated_at": 1788965239.1182797, "history": []}, "problem_1": {"id": "problem_1", "type": "problem", "content": "Problem Definition: Let f : ℝ → ℝ be angelic (resp. devilish) if there exist polynomials p, q ∈ ℝ[X] such that f(x) = p(⌊x⌋) + ⌊q(x)⌋ (resp. devilish definition, possibly ⌊p(x)⌋ + q(⌊x⌋) or identical). We seek the largest constant c such that if f is angelic, g is devilish, and f(s) ≠ g(s) for some s ∈ ℝ, then there exists t ∈ ℝ with |f(t) - g(t)| ≥ c.", "status": "UNVERIFIED", "created_by": "planner", "created_at": 1788965281.0049827, "updated_at": 1788965281.0049832, "history": []}, "idea_1": {"id": "idea_1", "type": "idea", "content": "Interpretation and Variants: In competition mathematics, problems with 'angelic (resp. devilish)' often pair f(x) = p(⌊x⌋) + ⌊q(x)⌋ with g(x) = ⌊p(x)⌋ + q(⌊x⌋) or g(x) = ⌊p(⌊x⌋)⌋ + q(x) or g(x) = p(⌊x⌋) + ⌈q(x)⌉. If f and g both have the form p(⌊x⌋) + ⌊q(x)⌋, we must also examine whether constant differences p_1(x) - p_2(x) = ε are constrained by polynomial rigidity.", "status": "IDEA", "created_by": "planner", "created_at": 1788965281.0201614, "updated_at": 1788965281.020162, "history": []}, "obstacle_1": {"id": "obstacle_1", "type": "obstacle", "content": "Under the literal definition in the problem text, angelic and devilish functions are identical: f(x) = p(⌊x⌋) + ⌊q(x)⌋. This leads to c = 0. Indeed, for any ε > 0, we can choose f(x) = ε (with p_1 = ε, q_1 = 0) and g(x) = 0 (with p_2 = 0, q_2 = 0), so f and g are angelic and devilish respectively, but |f(t) - g(t)| = ε < c everywhere.", "status": "OBSTACLE", "created_by": "planner", "created_at": 1788965372.1421032, "updated_at": 1788965372.1421032, "history": []}, "hypothesis_1": {"id": "hypothesis_1", "type": "hypothesis", "content": "To make the problem non-trivial, we must assume that the polynomials p and q are non-constant (degree >= 1) or that the definition of devilish is different (e.g., g(x) = ⌊p(x)⌋ + q(⌊x⌋) or g(x) = p(⌊x⌋) + ⌈q(x)⌉) and cannot be trivially made arbitrarily close constants.", "status": "IDEA", "created_by": "planner", "created_at": 1788965372.1492586, "updated_at": 1788965372.1492589, "history": []}, "question_1": {"id": "question_1", "type": "question", "content": "Is there a typo in the definition of devilish? The current text defines both angelic and devilish functions as p(⌊x⌋) + ⌊q(x)⌋. Possible correct definitions for devilish g(x) include: (1) ⌊p(x)⌋ + q(⌊x⌋), (2) p(⌊x⌋) + ⌈q(x)⌉, or (3) ⌈p(⌊x⌋) + q(x)⌉.", "status": "IDEA", "created_by": "planner", "created_at": 1788965431.0354087, "updated_at": 1788965431.035409, "history": []}, "idea_2": {"id": "idea_2", "type": "idea", "content": "Decomposition plan based on partitioning the degrees of the polynomials P and Q, separating the unbounded asymptotic growth cases from the low-degree constant/linear cases.", "status": "IDEA", "created_by": "planner", "created_at": 1788965451.8244002, "updated_at": 1788965451.8244004, "history": []}}, "edges": [{"source": "problem", "target": "question_1", "relation": "related_to"}], "stats": {"nodes": 7, "edges": 1, "by_status": {"UNVERIFIED": 2, "IDEA": 4, "OBSTACLE": 1}}, "events": [{"i": 0, "ts": 1788965239.1617432, "event": "user_message", "source": "user", "headline": "problem stated"}, {"i": 1, "ts": 1788965281.0189943, "event": "graph_action", "source": "planner", "headline": "ADD_NODE: added problem_1 (UNVERIFIED)"}, {"i": 2, "ts": 1788965281.0318131, "event": "graph_action", "source": "planner", "headline": "ADD_NODE: added idea_1 (IDEA)"}, {"i": 3, "ts": 1788965281.034357, "event": "graph_action", "source": "planner", "headline": "ADD_EDGE: ADD_EDGE skipped: problem -> problem (unknown node or duplicate)"}, {"i": 4, "ts": 1788965283.7073565, "event": "search_result", "source": "literature", "headline": "1 results for angelic devilish polynomial floor real numbers"}, {"i": 5, "ts": 1788965297.9485693, "event": "search_result", "source": "literature", "headline": "8 results for angelic devilish polynomials floor function"}, {"i": 6, "ts": 1788965311.8301752, "event": "worker_result", "source": "counterexample", "headline": "finished: Construct pairs of functions (f, g) that are angelic and devilish respectively such that f(s) ≠ g(s) everywhere or at some points, but sup_t |f(t) - g(t)| is minimized. Test if values like c = 1, c = 1/2, c = 2, or c ..."}, {"i": 7, "ts": 1788965372.1491241, "event": "graph_action", "source": "planner", "headline": "ADD_NODE: added obstacle_1 (OBSTACLE)"}, {"i": 8, "ts": 1788965372.157085, "event": "search_result", "source": "literature", "headline": "3 results for angelic devilish polynomials floor"}, {"i": 9, "ts": 1788965414.175812, "event": "worker_result", "source": "searcher", "headline": "finished: Search for results on the difference between floor-polynomial functions: {p(⌊x⌋) + ⌊q(x)⌋} and approximation of real functions by integer parts of polynomials."}, {"i": 10, "ts": 1788965431.0381804, "event": "graph_action", "source": "planner", "headline": "ADD_NODE: added question_1 (IDEA)"}, {"i": 11, "ts": 1788965431.0409517, "event": "graph_action", "source": "planner", "headline": "ADD_EDGE: edge problem -related_to-> question_1"}, {"i": 12, "ts": 1788965431.0448623, "event": "worker_result", "source": "decomposer", "headline": "finished: Decompose the problem of finding the optimal constant c into structural cases: (1) degree considerations for p_1, p_2, q_1, q_2, (2) behavior of q(x) within a single unit interval [n, n+1), (3) asymptotic difference o..."}, {"i": 13, "ts": 1788965451.829376, "event": "graph_action", "source": "planner", "headline": "ADD_NODE: added idea_2 (IDEA)"}, {"i": 14, "ts": 1788965451.8324156, "event": "worker_result", "source": "toy_example", "headline": "finished: Assuming f is angelic and g is devilish, but with non-constant polynomials p and q (degree >= 1), investigate whether we can still make |f(t) - g(t)| arbitrarily small, or if there is a positive lower bound for the su..."}], "events_total": 15, "finished": true, "poll_ms": 1000};
+</script>
+<script>
+"use strict";
+
+const STATUS_COLOUR = {
+  PROMISING: "var(--promising)",
+  OBSTACLE: "var(--obstacle)",
+  IDEA: "var(--idea)",
+  UNVERIFIED: "var(--unverified)",
+  POTENTIALLY_RELEVANT: "var(--paper)",
+  DEAD_END: "var(--dead)",
+  REJECTED: "var(--rejected)",
+};
+const STATUS_ORDER = Object.keys(STATUS_COLOUR);
+const DASHED_RELATIONS = new Set(["contradicts", "blocks"]);
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+const svg = document.getElementById("canvas");
+const viewport = document.getElementById("viewport");
+const edgeLayer = document.getElementById("edge-layer");
+const nodeLayer = document.getElementById("node-layer");
+const feedEl = document.getElementById("feed");
+const legendEl = document.getElementById("legend");
+const detailEl = document.getElementById("detail");
+const statsEl = document.getElementById("stats");
+const problemEl = document.getElementById("problem");
+const pillEl = document.getElementById("status-pill");
+
+const nodes = new Map();   // id -> {id, data, x, y, vx, vy, pinned, r, g, els}
+const edges = new Map();   // key -> {source, target, relation, el}
+const hiddenStatuses = new Set();
+
+let view = { x: 0, y: 0, k: 1 };
+let running = true;
+let eventsTotal = 0;
+let pollMs = 1000;
+let selected = null;
+// The view keeps reframing itself as the graph grows, until you take over by
+// panning, zooming or dragging; after that it leaves the camera alone.
+let userMoved = false;
+let refitTimer = null;
+let lastNodeCount = -1;
+
+// ---------------------------------------------------------------- utilities
+
+function el(tag, attrs) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const key in attrs) node.setAttribute(key, attrs[key]);
+  return node;
+}
+
+function clip(text, limit) {
+  text = (text || "").replace(/\s+/g, " ").trim();
+  return text.length <= limit ? text : text.slice(0, limit - 1) + "\u2026";
+}
+
+function clock(ts) {
+  const d = new Date((ts || 0) * 1000);
+  return d.toTimeString().slice(0, 8);
+}
+
+function stamp(ts) {
+  if (!ts) return "unknown";
+  return new Date(ts * 1000).toLocaleTimeString();
+}
+
+// ------------------------------------------------------------------ syncing
+
+function sync(payload) {
+  problemEl.textContent = payload.problem || "(no problem recorded)";
+  problemEl.title = payload.problem || "";
+
+  const incoming = payload.nodes || {};
+  const seen = new Set();
+
+  for (const id in incoming) {
+    seen.add(id);
+    const data = incoming[id];
+    let node = nodes.get(id);
+    if (!node) {
+      node = makeNode(id, data);
+      nodes.set(id, node);
+    } else {
+      const statusChanged = node.data.status !== data.status;
+      node.data = data;
+      if (statusChanged) flash(node);
+    }
+    paintNode(node);
+  }
+
+  for (const [id, node] of nodes) {
+    if (!seen.has(id)) {
+      node.els.group.remove();
+      nodes.delete(id);
+    }
+  }
+
+  const liveEdges = new Set();
+  for (const edge of payload.edges || []) {
+    const key = `${edge.source}|${edge.relation}|${edge.target}`;
+    liveEdges.add(key);
+    if (edges.has(key)) continue;
+    if (!nodes.has(edge.source) || !nodes.has(edge.target)) continue;
+    const line = el("line", {
+      class: "edge" + (DASHED_RELATIONS.has(edge.relation) ? " dashed" : ""),
+      "marker-end": DASHED_RELATIONS.has(edge.relation) ? "url(#arrow-dashed)" : "url(#arrow)",
+    });
+    const title = el("title", {});
+    title.textContent = `${edge.source} --${edge.relation}--> ${edge.target}`;
+    line.appendChild(title);
+    edgeLayer.appendChild(line);
+    edges.set(key, { ...edge, el: line });
+  }
+  for (const [key, edge] of edges) {
+    if (!liveEdges.has(key)) {
+      edge.el.remove();
+      edges.delete(key);
+    }
+  }
+
+  recomputeDegrees();
+  drawLegend(payload.stats);
+  statsEl.textContent =
+    `${payload.stats.nodes} nodes, ${payload.stats.edges} edges` +
+    (payload.run ? ` \u00b7 ${payload.run}` : "");
+  applyFilter();
+
+  if (nodes.size !== lastNodeCount) {
+    lastNodeCount = nodes.size;
+    scheduleFit(1400);   // after the layout has settled around the new node
+  }
+}
+
+function scheduleFit(delay) {
+  if (userMoved) return;
+  clearTimeout(refitTimer);
+  refitTimer = setTimeout(() => {
+    if (!userMoved) fit();
+  }, delay);
+}
+
+function makeNode(id, data) {
+  // Start new nodes just off an existing relative, so the layout does not
+  // have to drag them across the whole canvas.
+  let ox = 0, oy = 0;
+  if (nodes.size) {
+    const anchor = [...nodes.values()][nodes.size - 1];
+    ox = anchor.x;
+    oy = anchor.y;
+  }
+  const angle = Math.random() * Math.PI * 2;
+  const node = {
+    id,
+    data,
+    x: id === "problem" ? 0 : ox + Math.cos(angle) * 90,
+    y: id === "problem" ? 0 : oy + Math.sin(angle) * 90,
+    vx: 0,
+    vy: 0,
+    pinned: id === "problem",
+    g: 0,
+    r: 7,
+    els: {},
+  };
+
+  const group = el("g", { class: id === "problem" ? "node root" : "node" });
+  const circle = el("circle", { r: 7 });
+  const title = el("title", {});
+  const label = el("text", { class: "label", x: 11, y: 3 });
+  const snippet = el("text", { class: "snippet", x: 11, y: 14 });
+  group.append(circle, title, label, snippet);
+  nodeLayer.appendChild(group);
+  node.els = { group, circle, title, label, snippet };
+
+  group.addEventListener("pointerdown", (ev) => startDrag(ev, node));
+  group.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (!clickSuppressed) {
+      select(node.id);
+    }
+    clickSuppressed = false;
+  });
+
+  flash(node);
+  return node;
+}
+
+function paintNode(node) {
+  const data = node.data;
+  node.els.circle.setAttribute("fill", STATUS_COLOUR[data.status] || "var(--unverified)");
+  node.els.title.textContent =
+    `${data.id} \u00b7 ${data.type} \u00b7 ${data.status} \u00b7 by ${data.created_by}\n\n` +
+    clip(data.content, 600);
+  node.els.label.textContent = data.id;
+  node.els.snippet.textContent = clip(data.content, 46);
+}
+
+function flash(node) {
+  node.els.group.classList.add("fresh");
+  setTimeout(() => node.els.group.classList.remove("fresh"), 2300);
+}
+
+function recomputeDegrees() {
+  for (const node of nodes.values()) node.g = 0;
+  for (const edge of edges.values()) {
+    const a = nodes.get(edge.source);
+    const b = nodes.get(edge.target);
+    if (a) a.g += 1;
+    if (b) b.g += 1;
+  }
+  for (const node of nodes.values()) {
+    node.r = node.id === "problem" ? 15 : 6 + 2.6 * Math.sqrt(node.g);
+    node.els.circle.setAttribute("r", node.r);
+  }
+}
+
+// ------------------------------------------------------------------- filter
+
+function applyFilter() {
+  for (const node of nodes.values()) {
+    const off = hiddenStatuses.has(node.data.status);
+    node.els.group.classList.toggle("faded", off);
+  }
+  for (const edge of edges.values()) {
+    const a = nodes.get(edge.source);
+    const b = nodes.get(edge.target);
+    const off =
+      (a && hiddenStatuses.has(a.data.status)) || (b && hiddenStatuses.has(b.data.status));
+    edge.el.classList.toggle("faded", !!off);
+  }
+}
+
+function drawLegend(stats) {
+  const counts = stats.by_status || {};
+  legendEl.replaceChildren();
+  for (const status of STATUS_ORDER) {
+    const row = document.createElement("div");
+    row.className = "legend-row" + (hiddenStatuses.has(status) ? " off" : "");
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.background = STATUS_COLOUR[status];
+    const name = document.createElement("span");
+    name.textContent = status.replace(/_/g, " ").toLowerCase();
+    const count = document.createElement("span");
+    count.className = "legend-count";
+    count.textContent = counts[status] || 0;
+    row.append(swatch, name, count);
+    row.addEventListener("click", () => {
+      if (hiddenStatuses.has(status)) hiddenStatuses.delete(status);
+      else hiddenStatuses.add(status);
+      row.classList.toggle("off");
+      applyFilter();
+      syncDeadButton();
+    });
+    legendEl.appendChild(row);
+  }
+}
+
+// ------------------------------------------------------------------- detail
+
+function select(id) {
+  selected = id;
+  for (const node of nodes.values()) {
+    node.els.group.classList.toggle("selected", node.id === id);
+  }
+  renderDetail();
+}
+
+function renderDetail() {
+  const node = selected ? nodes.get(selected) : null;
+  detailEl.replaceChildren();
+  const heading = document.createElement("h2");
+  heading.textContent = "Node";
+  detailEl.appendChild(heading);
+
+  if (!node) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "Click a node to read it in full.";
+    detailEl.appendChild(empty);
+    return;
+  }
+
+  const data = node.data;
+  const head = document.createElement("div");
+  head.className = "head";
+  const id = document.createElement("span");
+  id.className = "id";
+  id.textContent = data.id;
+  head.appendChild(id);
+  for (const text of [data.type, data.status, `by ${data.created_by}`]) {
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = text;
+    head.appendChild(tag);
+  }
+  detailEl.appendChild(head);
+
+  const content = document.createElement("div");
+  content.className = "content";
+  content.textContent = data.content || "(empty)";
+  detailEl.appendChild(content);
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.textContent = `created ${stamp(data.created_at)} \u00b7 updated ${stamp(data.updated_at)}`;
+  detailEl.appendChild(meta);
+
+  const links = [];
+  for (const edge of edges.values()) {
+    if (edge.source === data.id) links.push(`${edge.relation} \u2192 ${edge.target}`);
+    else if (edge.target === data.id) links.push(`${edge.source} \u2192 ${edge.relation} \u2192 this`);
+  }
+  addList("Links", links);
+  addList(
+    "Status history",
+    (data.history || []).map((h) => `${h.status_from} \u2192 ${h.status_to} (${h.by})`)
+  );
+  addList("Notes", (data.notes || []).map((n) => `${n.by}: ${n.note}`));
+
+  function addList(title, items) {
+    if (!items.length) return;
+    const label = document.createElement("div");
+    label.className = "meta";
+    label.style.marginTop = "6px";
+    label.textContent = title;
+    const list = document.createElement("ul");
+    for (const item of items) {
+      const li = document.createElement("li");
+      li.textContent = item;
+      list.appendChild(li);
+    }
+    detailEl.append(label, list);
+  }
+}
+
+// --------------------------------------------------------------------- feed
+
+function appendEvents(events) {
+  for (const event of events) {
+    const row = document.createElement("div");
+    row.className = `feed-row ${event.event}`;
+    const t = document.createElement("span");
+    t.className = "t";
+    t.textContent = clock(event.ts);
+    const who = document.createElement("span");
+    who.className = `who ${event.source}`;
+    who.textContent = event.source;
+    const what = document.createElement("span");
+    what.className = "what";
+    what.textContent = event.headline || event.event;
+    row.append(t, who, what);
+    feedEl.prepend(row);
+  }
+  while (feedEl.childElementCount > 300) feedEl.lastElementChild.remove();
+}
+
+// ------------------------------------------------------------------- layout
+
+const REPULSION = 9000;
+const SPRING = 0.02;
+const SPRING_LENGTH = 125;
+const CENTRING = 0.0016;
+const DAMPING = 0.86;
+const MAX_SPEED = 9;
+
+function step() {
+  const list = [...nodes.values()];
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i];
+    for (let j = i + 1; j < list.length; j++) {
+      const b = list[j];
+      let dx = a.x - b.x;
+      let dy = a.y - b.y;
+      let d2 = dx * dx + dy * dy;
+      if (d2 < 1) {
+        dx = Math.random() - 0.5;
+        dy = Math.random() - 0.5;
+        d2 = 1;
+      }
+      if (d2 > 640000) continue;   // far apart: ignore
+      const force = REPULSION / d2;
+      const d = Math.sqrt(d2);
+      const fx = (dx / d) * force;
+      const fy = (dy / d) * force;
+      a.vx += fx; a.vy += fy;
+      b.vx -= fx; b.vy -= fy;
+    }
+  }
+
+  for (const edge of edges.values()) {
+    const a = nodes.get(edge.source);
+    const b = nodes.get(edge.target);
+    if (!a || !b) continue;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const force = (d - SPRING_LENGTH) * SPRING;
+    const fx = (dx / d) * force;
+    const fy = (dy / d) * force;
+    a.vx += fx; a.vy += fy;
+    b.vx -= fx; b.vy -= fy;
+  }
+
+  for (const node of nodes.values()) {
+    if (node.pinned) { node.vx = 0; node.vy = 0; continue; }
+    node.vx -= node.x * CENTRING;
+    node.vy -= node.y * CENTRING;
+    node.vx *= DAMPING;
+    node.vy *= DAMPING;
+    const speed = Math.hypot(node.vx, node.vy);
+    if (speed > MAX_SPEED) {
+      node.vx = (node.vx / speed) * MAX_SPEED;
+      node.vy = (node.vy / speed) * MAX_SPEED;
+    }
+    node.x += node.vx;
+    node.y += node.vy;
+  }
+}
+
+function draw() {
+  for (const node of nodes.values()) {
+    node.els.group.setAttribute("transform", `translate(${node.x.toFixed(1)} ${node.y.toFixed(1)})`);
+  }
+  for (const edge of edges.values()) {
+    const a = nodes.get(edge.source);
+    const b = nodes.get(edge.target);
+    if (!a || !b) continue;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const ux = dx / d;
+    const uy = dy / d;
+    edge.el.setAttribute("x1", (a.x + ux * (a.r + 1)).toFixed(1));
+    edge.el.setAttribute("y1", (a.y + uy * (a.r + 1)).toFixed(1));
+    edge.el.setAttribute("x2", (b.x - ux * (b.r + 5)).toFixed(1));
+    edge.el.setAttribute("y2", (b.y - uy * (b.r + 5)).toFixed(1));
+  }
+  // Snippets help while the graph is small; past a couple of dozen nodes they
+  // overlap into noise, so only the selected node keeps its own.
+  const showSnippets = view.k >= 0.85 && nodes.size <= 18;
+  for (const node of nodes.values()) {
+    node.els.snippet.style.display = showSnippets || node.id === selected ? "" : "none";
+  }
+}
+
+function frame() {
+  if (running) step();
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function applyView() {
+  viewport.setAttribute("transform", `translate(${view.x} ${view.y}) scale(${view.k})`);
+}
+
+function fit() {
+  if (!nodes.size) return;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const node of nodes.values()) {
+    minX = Math.min(minX, node.x - node.r);
+    minY = Math.min(minY, node.y - node.r);
+    maxX = Math.max(maxX, node.x + node.r + 90);   // labels sit to the right
+    maxY = Math.max(maxY, node.y + node.r + 16);
+  }
+  const rect = svg.getBoundingClientRect();
+  const pad = 55;
+  const k = Math.min(
+    (rect.width - pad * 2) / Math.max(maxX - minX, 1),
+    (rect.height - pad * 2) / Math.max(maxY - minY, 1),
+    1.6
+  );
+  view.k = Math.max(k, 0.12);
+  view.x = rect.width / 2 - ((minX + maxX) / 2) * view.k;
+  view.y = rect.height / 2 - ((minY + maxY) / 2) * view.k;
+  applyView();
+}
+
+// ---------------------------------------------------------- pointer control
+
+function toWorld(clientX, clientY) {
+  const rect = svg.getBoundingClientRect();
+  return {
+    x: (clientX - rect.left - view.x) / view.k,
+    y: (clientY - rect.top - view.y) / view.k,
+  };
+}
+
+let drag = null;
+let clickSuppressed = false;
+
+function startDrag(ev, node) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  const world = toWorld(ev.clientX, ev.clientY);
+  drag = { node, dx: node.x - world.x, dy: node.y - world.y, moved: false };
+  node.pinned = true;
+  svg.setPointerCapture(ev.pointerId);
+  clickSuppressed = false;
+}
+
+let pan = null;
+
+svg.addEventListener("pointerdown", (ev) => {
+  if (drag) return;
+  pan = { x: ev.clientX, y: ev.clientY, vx: view.x, vy: view.y };
+  svg.classList.add("panning");
+  svg.setPointerCapture(ev.pointerId);
+});
+
+svg.addEventListener("pointermove", (ev) => {
+  if (drag) {
+    const world = toWorld(ev.clientX, ev.clientY);
+    drag.node.x = world.x + drag.dx;
+    drag.node.y = world.y + drag.dy;
+    drag.node.vx = 0;
+    drag.node.vy = 0;
+    drag.moved = true;
+    clickSuppressed = true;
+    userMoved = true;
+  } else if (pan) {
+    view.x = pan.vx + (ev.clientX - pan.x);
+    view.y = pan.vy + (ev.clientY - pan.y);
+    userMoved = true;
+    applyView();
+  }
+});
+
+function endPointer(ev) {
+  if (drag) {
+    if (!drag.moved && drag.node.id !== "problem") drag.node.pinned = false;
+    drag = null;
+    clickSuppressed = false;
+  }
+  pan = null;
+  svg.classList.remove("panning");
+  try { svg.releasePointerCapture(ev.pointerId); } catch (_) {}
+}
+svg.addEventListener("pointerup", endPointer);
+svg.addEventListener("pointercancel", endPointer);
+
+svg.addEventListener("wheel", (ev) => {
+  ev.preventDefault();
+  const rect = svg.getBoundingClientRect();
+  const mx = ev.clientX - rect.left;
+  const my = ev.clientY - rect.top;
+  const factor = Math.exp(-ev.deltaY * 0.0015);
+  const k = Math.min(Math.max(view.k * factor, 0.1), 4);
+  view.x = mx - ((mx - view.x) * k) / view.k;
+  view.y = my - ((my - view.y) * k) / view.k;
+  view.k = k;
+  userMoved = true;
+  applyView();
+}, { passive: false });
+
+svg.addEventListener("click", () => select(null));
+
+// ----------------------------------------------------------------- controls
+
+const btnPause = document.getElementById("btn-pause");
+const btnDead = document.getElementById("btn-dead");
+
+btnPause.addEventListener("click", () => {
+  running = !running;
+  btnPause.textContent = running ? "Pause layout" : "Resume layout";
+  btnPause.classList.toggle("on", !running);
+});
+
+document.getElementById("btn-fit").addEventListener("click", () => {
+  userMoved = false;   // hand the camera back to auto-framing
+  fit();
+});
+
+const DEAD = ["DEAD_END", "REJECTED"];
+btnDead.addEventListener("click", () => {
+  const hiding = !DEAD.every((s) => hiddenStatuses.has(s));
+  for (const status of DEAD) {
+    if (hiding) hiddenStatuses.add(status);
+    else hiddenStatuses.delete(status);
+  }
+  applyFilter();
+  drawLegend({ by_status: lastCounts });
+  syncDeadButton();
+});
+
+function syncDeadButton() {
+  const hiding = DEAD.every((s) => hiddenStatuses.has(s));
+  btnDead.classList.toggle("on", hiding);
+  btnDead.textContent = hiding ? "Show dead ends" : "Hide dead ends";
+}
+
+document.getElementById("btn-unpin").addEventListener("click", () => {
+  for (const node of nodes.values()) {
+    if (node.id !== "problem") node.pinned = false;
+  }
+});
+
+// ------------------------------------------------------------------ polling
+
+let lastCounts = {};
+
+function setPill(text, cls) {
+  pillEl.textContent = text;
+  pillEl.className = cls;
+}
+
+async function poll() {
+  const first = eventsTotal === 0 && nodes.size === 0;
+  try {
+    const response = await fetch(
+      `/api/state?events_from=${eventsTotal}&full=${first ? 1 : 0}`,
+      { cache: "no-store" }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    if (payload.changed) {
+      pollMs = payload.poll_ms || pollMs;
+      lastCounts = payload.stats.by_status || {};
+      sync(payload);
+      appendEvents(payload.events || []);
+      eventsTotal = payload.events_total;
+      if (selected) renderDetail();
+      setPill(payload.finished ? "run finished" : "live", payload.finished ? "done" : "live");
+    }
+  } catch (err) {
+    setPill("no connection", "lost");
+  } finally {
+    setTimeout(poll, pollMs);
+  }
+}
+
+window.addEventListener("resize", () => applyView());
+
+applyView();
+syncDeadButton();
+requestAnimationFrame(frame);
+
+if (window.STATIC_STATE) {
+  const payload = window.STATIC_STATE;
+  pollMs = 0;
+  lastCounts = payload.stats?.by_status || {};
+  sync(payload);
+  appendEvents(payload.events || []);
+  eventsTotal = payload.events_total || (payload.events ? payload.events.length : 0);
+  if (selected) renderDetail();
+  setPill("run completed (static)", "done");
+  setTimeout(() => fit(), 350);
+} else {
+  poll();
+}
+</script>
+</body>
+</html>

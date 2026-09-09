@@ -1,0 +1,50 @@
+# Effective configuration for this run. API keys are redacted.
+# Source: C:\Users\samfe\OneDrive\Desktop\math_agent\run_config.toml
+
+[run]
+mode = "main"
+problem = "Consider a parameter estimation rejection approximate bayesian computation algorithm, with MMD as the discreprancy measure rather than a summary statistic. How does the spectral properties, or other properties of the kernel of the MMD affect the convergence rate of the algorithm?"
+tag = ""
+resume = ""
+
+[budget]
+max_planner_calls = 1000
+max_worker_calls = 1000
+max_wall_clock_seconds = 1800
+max_concurrent_workers = 4
+
+[models]
+provider = "gemini"
+planner = "adaptive"
+worker = "adaptive"
+baseline = "adaptive"
+
+[thinking]
+planner = "HIGH"
+worker = "HIGH"
+baseline = "HIGH"
+
+[api_keys]
+default = "set (...Kf7w)"
+planner = "set (...Kf7w)"
+baseline = "set (...Kf7w)"
+worker_1 = "set (...vd7Y)"
+worker_2 = "set (...wlqw)"
+worker_3 = "set (...OsMA)"
+worker_4 = "set (...WRQw)"
+worker_5 = "not set"
+worker_6 = "not set"
+
+[adaptive]
+ladder = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
+cooldown_seconds = 180
+
+[literature]
+openalex_mailto = "math-agent-prototype@example.com"
+search_result_limit = 8
+
+[viewer]
+enabled = true
+port = 8765
+open_browser = true
+poll_ms = 1000

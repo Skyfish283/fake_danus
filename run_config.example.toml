@@ -33,11 +33,12 @@ resume = ""
 
 [budget]
 # Whichever cap trips first ends the run cleanly and still writes summary.md.
-# Each autonomous worker slot uses its own API key (worker_1, worker_2, etc.).
+# max_concurrent_workers caps how many worker calls run at once; all of them
+# share the [api_keys] pool.
 max_planner_calls = 40
 max_worker_calls = 30
 max_wall_clock_seconds = 1800
-max_concurrent_workers = 6   # number of worker keys needed in [api_keys]
+max_concurrent_workers = 6
 
 
 [models]
@@ -47,12 +48,12 @@ max_concurrent_workers = 6   # number of worker keys needed in [api_keys]
 provider = "gemini"
 # Model IDs must match the provider, or adaptive:
 #   gemini: gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash,
-#           gemini-3.5-flash-lite, adaptive
+#           gemini-3.5-flash-lite, gemini-3.1-flash-lite, adaptive
 #   glm:    glm-4.7-flash, adaptive
 # adaptive walks the [adaptive] ladder for that provider, stepping down when a
 # model is busy and stepping back up once it recovers
 planner = "adaptive"
-# Worker models are used by autonomous workers (all slots share explorer pool)
+# Worker models are used by autonomous workers (all slots share the pool)
 worker = "gemini-3.5-flash"
 baseline = "gemini-3.5-flash"
 
@@ -65,33 +66,29 @@ worker = "MEDIUM"
 
 
 [api_keys]
-# Planner has its own key. Each worker slot gets its own key.
-# Number of worker keys should match max_concurrent_workers in [budget].
-# A blank role falls back to `default`, then to GEMINI_API_KEY when
-# provider = "gemini", or ZAI_API_KEY when provider = "glm".
+# Shared pool: the planner, every worker and the baselines all bill these
+# keys. List as many as you have; on a contention error (429/503/quota) the
+# client tries another key before stepping down the model ladder.
+# An empty pool falls back to GEMINI_API_KEY when provider = "gemini",
+# or ZAI_API_KEY when provider = "glm".
 # Keys are never printed or written into a run directory.
-default = ""
-planner = ""
-worker_1 = ""
-worker_2 = ""
-worker_3 = ""
-worker_4 = ""
-worker_5 = ""
-worker_6 = ""
-baseline = ""
+keys = [
+    "",
+]
 
 
 [adaptive]
 # Tried in order by any role set to "adaptive". Entries must belong to the
 # current [models] provider. A model that answers 429 or 503 is demoted for
 # cooldown_seconds, then probed again.
-# Gemini default: 3.7-flash -> 3.6-flash -> 3.5-flash -> 3.5-flash-lite
+# Gemini default: 3.7-flash -> 3.6-flash -> 3.5-flash -> 3.5-flash-lite -> 3.1-flash-lite
 # GLM default if omitted: glm-4.7-flash
 ladder = [
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
 ]
 cooldown_seconds = 180
 

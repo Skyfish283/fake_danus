@@ -32,37 +32,26 @@ max_concurrent_workers = 6
 [models]
 # gemini | glm  — whole run uses one provider; do not mix IDs across providers
 provider = "gemini"
-# gemini-3.7-flash | gemini-3.6-flash | gemini-3.5-flash | gemini-3.5-flash-lite | adaptive
+# gemini-3.7-flash | gemini-3.6-flash | gemini-3.5-flash | gemini-3.5-flash-lite | gemini-3.1-flash-lite | adaptive
 # glm-4.7-flash | adaptive
 planner = "adaptive"
-explorer = "adaptive"
-mathematician = "adaptive"
-skeptic = "adaptive"
-verifier = "adaptive"
+worker = "adaptive"
 baseline = "adaptive"
 
 
 [thinking]
 # LOW | MEDIUM | HIGH
 planner = "HIGH"
-explorer = "HIGH"
-mathematician = "HIGH"
-skeptic = "HIGH"
-verifier = "HIGH"
+worker = "HIGH"
+baseline = "HIGH"
 
 
 [api_keys]
-# A blank role falls back to `default`, then to GEMINI_API_KEY (gemini) or
-# ZAI_API_KEY (glm).
-# The six worker slots share these three worker keys:
-#   explorer + flex_1, mathematician + flex_2, skeptic + flex_3.
-# Verifier has no key of its own; it bills whichever flex slot runs it.
-default = ""
-planner = ""
-explorer = ""
-mathematician = ""
-skeptic = ""
-baseline = ""
+# Shared pool for the planner, every worker and the baselines. Blank falls
+# back to GEMINI_API_KEY (gemini) or ZAI_API_KEY (glm).
+keys = [
+    "",
+]
 
 
 [adaptive]
@@ -71,6 +60,7 @@ ladder = [
     "gemini-3.6-flash",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
 ]
 cooldown_seconds = 180
 

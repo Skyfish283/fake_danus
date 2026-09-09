@@ -35,8 +35,8 @@ __all__ = [
     "RunConfig",
     "RunOptions",
     "banner_lines",
-    "get_api_key",
-    "key_status",
+    "api_key_pool",
+    "key_pool_status",
     "options_from",
     "render_redacted_toml",
     "require_api_keys",
@@ -58,14 +58,10 @@ model_router.apply_config(
     provider=RUN_CONFIG.provider,
 )
 
-# Config roles: the names run_config.toml uses under [models], [thinking] and
-# [api_keys]. All autonomous workers share the single "worker" role.
+# Model roles: the names run_config.toml uses under [models] and [thinking].
+# All autonomous workers share the single "worker" role. API keys are no
+# longer per role: every caller shares the pool in [api_keys].keys.
 WORKER_ROLES = ("worker",)
-
-def get_worker_key_for_slot(slot_index: int) -> str:
-    """Get the API key role name for a worker slot (0-based index)."""
-    from .models import worker_slot_to_key
-    return worker_slot_to_key(slot_index)
 
 # --- Models -----------------------------------------------------------------
 # Any of these may be the string "adaptive", in which case the model is chosen
@@ -125,7 +121,7 @@ VIEWER_POLL_MS = RUN_CONFIG.viewer_poll_ms
 
 
 class MissingAPIKey(RuntimeError):
-    """Raised when no API key can be found for a role."""
+    """Raised when no API key can be found for the run."""
 
 
 def _env_key_name() -> str:
@@ -138,35 +134,30 @@ def _key_help_url() -> str:
     return "https://aistudio.google.com/apikey"
 
 
-def resolve_api_key(role: str = "default") -> tuple[str, str]:
-    """Return `(key, source)` for a role, without raising.
+def api_key_pool() -> tuple[str, ...]:
+    """Every API key this run may bill, in priority order.
 
-    A role's own key wins, then the shared `default` key, then the environment
-    variable. An empty key means nothing is configured.
+    The `[api_keys].keys` list comes first, then the provider's environment
+    variable (`GEMINI_API_KEY` or `ZAI_API_KEY`) when set. The planner, all
+    workers and the baselines share this one pool: on a contention error the
+    client tries another key before stepping down the model ladder.
     """
-    lookup = ["default"] if role == "default" else [model_router.config_role(role), "default"]
-    for name in lookup:
-        key = RUN_CONFIG.api_keys.get(name, "").strip()
-        if key:
-            return key, f"run_config.toml [api_keys].{name}"
-
-    env_name = _env_key_name()
-    key = (os.environ.get(env_name) or "").strip()
-    if key:
-        return key, env_name
-    return "", "unset"
+    pool = [key for key in RUN_CONFIG.api_keys if key.strip()]
+    env_key = (os.environ.get(_env_key_name()) or "").strip()
+    if env_key and env_key not in pool:
+        pool.append(env_key)
+    return tuple(pool)
 
 
-def get_api_key(role: str = "default") -> str:
-    """Return the API key this role should call with, or explain how to set one."""
-    key, _source = resolve_api_key(role)
-    if key:
-        return key
-    named = "default" if role == "default" else model_router.config_role(role)
+def require_api_keys() -> None:
+    """Fail before any work starts if the run has no API key at all."""
+    if api_key_pool():
+        return
     env_name = _env_key_name()
     raise MissingAPIKey(
-        f"No API key for the {named!r} role ({RUN_CONFIG.provider} provider).\n"
-        f"  Set it in {CONFIG_PATH} under [api_keys] (per role, or 'default'),\n"
+        f"No API keys configured ({RUN_CONFIG.provider} provider).\n"
+        f"  Add one or more to {CONFIG_PATH} under [api_keys]:\n"
+        '    [api_keys]\n    keys = ["your-first-key", "your-second-key"]\n'
         "  or fall back to the environment:\n"
         f"    PowerShell (this session):  $env:{env_name} = 'your-key'\n"
         f"    PowerShell (persistent):    setx {env_name} 'your-key'\n"
@@ -174,28 +165,23 @@ def get_api_key(role: str = "default") -> str:
     )
 
 
-def require_api_keys(roles: Iterable[str]) -> None:
-    """Fail before any work starts if a role a run needs has no key."""
-    missing = [role for role in roles if not resolve_api_key(role)[0]]
-    if not missing:
-        return
-    env_name = _env_key_name()
-    raise MissingAPIKey(
-        f"No API key for: {', '.join(missing)} ({RUN_CONFIG.provider} provider).\n"
-        f"  Set one per role in {CONFIG_PATH} under [api_keys], or a shared\n"
-        "  [api_keys].default, or fall back to the environment:\n"
-        f"    PowerShell (this session):  $env:{env_name} = 'your-key'\n"
-        f"    PowerShell (persistent):    setx {env_name} 'your-key'\n"
-        f"Get a key from {_key_help_url()}"
-    )
-
-
-def key_status(role: str = "default") -> str:
-    """Human-readable key state for the run banner. Never reveals the key."""
-    key, source = resolve_api_key(role)
-    if not key:
+def key_pool_status() -> str:
+    """Human-readable key pool state for the run banner. Never reveals a key."""
+    file_keys = [key for key in RUN_CONFIG.api_keys if key.strip()]
+    env_key = (os.environ.get(_env_key_name()) or "").strip()
+    parts = [
+        f"{key_fingerprint(key)} via run_config.toml [api_keys].keys[{i}]"
+        for i, key in enumerate(file_keys)
+    ]
+    if env_key:
+        where = "also" if env_key in file_keys else "only"
+        if env_key not in file_keys:
+            parts.append(f"{key_fingerprint(env_key)} via {_env_key_name()}")
+        else:
+            parts.append(f"{_env_key_name()} matches a file key ({where} in pool once)")
+    if not parts:
         return "not set"
-    return f"{key_fingerprint(key)} via {source}"
+    return f"{len(api_key_pool())} pooled key(s): " + "; ".join(parts)
 
 
 def model_status(role: str) -> str:
@@ -204,11 +190,12 @@ def model_status(role: str) -> str:
 
 
 def banner_lines(roles: Iterable[str]) -> list[str]:
-    """The resolved model and key for each role, safe to print."""
+    """The shared key pool plus the resolved model for each role, safe to print."""
     lines = [
         f"config: {RUN_CONFIG.path or 'built-in defaults'}",
         f"provider: {RUN_CONFIG.provider}",
+        f"keys: {key_pool_status()}",
     ]
     for role in roles:
-        lines.append(f"{role}: {model_status(role)} | key {key_status(role)}")
+        lines.append(f"{role}: {model_status(role)}")
     return lines

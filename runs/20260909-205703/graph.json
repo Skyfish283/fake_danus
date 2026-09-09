@@ -1,0 +1,482 @@
+{
+  "problem": "Consider a parameter estimation rejection approximate bayesian computation algorithm, with MMD as the discreprancy measure rather than a summary statistic. How does the spectral properties, or other properties of the kernel of the MMD affect the convergence rate of the algorithm?",
+  "nodes": {
+    "problem": {
+      "id": "problem",
+      "type": "problem",
+      "content": "Consider a parameter estimation rejection approximate bayesian computation algorithm, with MMD as the discreprancy measure rather than a summary statistic. How does the spectral properties, or other properties of the kernel of the MMD affect the convergence rate of the algorithm?",
+      "status": "UNVERIFIED",
+      "created_by": "user",
+      "created_at": 1788953223.0969644,
+      "updated_at": 1788953223.0969646,
+      "history": []
+    },
+    "paper_1": {
+      "id": "paper_1",
+      "type": "paper",
+      "content": "Cherief-Abdellatif & Alquier (2020) establish consistency and exponential contraction rates for generalized Bayesian inference using MMD as loss, governed by bracketing entropy and modulus of continuity.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1788953273.741666,
+      "updated_at": 1788953273.7416666,
+      "history": []
+    },
+    "lemma_1": {
+      "id": "lemma_1",
+      "type": "lemma",
+      "content": "Spectral representation of squared MMD: MMD^2(P_0, P_theta) = sum_{j=1}^infty lambda_j (mu_{0,j} - mu_{theta,j})^2, where lambda_j are kernel integral operator eigenvalues. Rapid eigenvalue decay (e.g. Gaussian kernels) heavily damps high-frequency discrepancies, leading to an ill-posed inverse map theta -> MMD.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788953273.7485666,
+      "updated_at": 1788953273.7485669,
+      "history": []
+    },
+    "obstacle_1": {
+      "id": "obstacle_1",
+      "type": "obstacle",
+      "content": "ABC rejection uses an indicator filter I(widehat{MMD}_n <= epsilon), differing from the Gibbs/generalized posterior exp(-gamma_n n MMD^2) studied in literature. Analyzing joint limits n, m -> inf and epsilon -> 0 requires delicate control of ABC bias-variance trade-offs.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1788953273.7568626,
+      "updated_at": 1788954647.4301379,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788953514.0567725,
+          "by": "planner",
+          "note": "Confirmed by decomposer: hard rejection indicator discontinuity lacks smoothness of exponential Gibbs weights, requiring U-process large deviations."
+        },
+        {
+          "at": 1788954647.430136,
+          "by": "planner",
+          "note": "Toy model analysis demonstrates that replacing the non-Lipschitz indicator I(widehat{MMD}_n^2 <= epsilon_n^2) with a smoothed exponential weight exp(-gamma_n W_n) resolves the boundary discontinuity obstacle and permits standard Gibbs posterior contraction proofs."
+        }
+      ]
+    },
+    "obstacle_2": {
+      "id": "obstacle_2",
+      "type": "obstacle",
+      "content": "Simulation vs data sample size asymmetry: empirical MMD between size n (observed) and size m (simulated) has variance dominated by min(n, m), creating difficulties when m is large but n is fixed in ABC.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1788953273.7640672,
+      "updated_at": 1788954175.3004007,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788954175.3003993,
+          "by": "planner",
+          "note": "Task 54 confirmed empirical MMD variance decomposes as O(1/n + 1/m). Thus, maintaining statistical rate parity requires simulation sample size m(n) = Omega(n)."
+        }
+      ]
+    },
+    "hypothesis_1": {
+      "id": "hypothesis_1",
+      "type": "hypothesis",
+      "content": "The Smoothness Dilemma in MMD-ABC: The posterior contraction rate is governed by a trade-off between the empirical MMD convergence rate $O_p(n^{-\\alpha})$ and the parameter identifiability modulus $MMD(P_\\theta, P_0) \\ge c \\|\\theta - \\theta_0\\|^\\beta$. Smooth kernels (exponential spectral decay, e.g., Gaussian) yield fast empirical rates $\\alpha \\approx 1/2$ but poor sensitivity (large $\\beta$), whereas rougher kernels (polynomial spectral decay, e.g., Matérn) preserve sensitivity (smaller $\\beta$) but suffer from slow empirical rates $\\alpha$ in high dimensions.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788953325.6137896,
+      "updated_at": 1788954556.09869,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788954394.2081418,
+          "by": "planner",
+          "note": "Refined by toy example findings: in location families, the smoothness dilemma does not manifest as a changing identifiability exponent $\\beta$ (which remains $\\beta = 1$ for all Matérn kernels), but rather as a variance breakdown threshold $s \\le d/4$ versus the dimension-dependent preconstant curse for smooth kernels."
+        },
+        {
+          "at": 1788954556.0986886,
+          "by": "planner",
+          "note": "The smoothness and identifiability trade-off must be restricted to bounded kernels to prevent moment divergence issues highlighted in heavy-tailed counterexamples."
+        }
+      ]
+    },
+    "obstacle_3": {
+      "id": "obstacle_3",
+      "type": "obstacle",
+      "content": "Curse of Dimensionality in Mercer Spectral Decay: For a kernel with smoothness $s$ on a $d$-dimensional domain, Mercer eigenvalues decay as $\\lambda_j \\sim j^{-2s/d}$. In high dimensions, this decay is extremely slow unless the smoothness $s$ is very large. Slow decay increases the effective dimension of the RKHS, which inflates the variance of empirical MMD estimators and severely degrades the MMD-ABC convergence rate.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1788953325.6209025,
+      "updated_at": 1788954527.9235492,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788954527.9235477,
+          "by": "planner",
+          "note": "Confirmed via rank-1 linear kernel toy example that infinite-dimensional spectral decay is necessary for the dimensionality curse; finite-dimensional or rank-deficient kernels bypass variance inflation and preconstant decay."
+        }
+      ]
+    },
+    "paper_2": {
+      "id": "paper_2",
+      "type": "paper",
+      "content": "Bernton, Jacob, Gerber, and Robert (2019) 'Approximate Bayesian Computation with the Wasserstein Distance'. Establishes posterior contraction rates for rejection ABC using Wasserstein distance W_1 by bounding the denominator via small-ball probabilities of W_1(P_hat_n, P_0) and utilizing a modulus of continuity for parameter identifiability: W_1(P_theta, P_0) >= c ||theta - theta_0||^beta.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1788953536.7864857,
+      "updated_at": 1788953536.7864866,
+      "history": []
+    },
+    "idea_1": {
+      "id": "idea_1",
+      "type": "idea",
+      "content": "Spectral Truncation for MMD-ABC Rejection Bounds: To bound the rejection probability P(MMD_hat_n^2 <= epsilon_n^2) under P_theta, we can project the empirical MMD onto the subspace spanned by the top K_n eigenfunctions of the kernel integral operator. The first K_n components enjoy parametric convergence rates, while the tail sum_{j > K_n} lambda_j is controlled by the kernel's spectral decay. Choosing K_n optimally to balance truncation error and estimation variance allows bounding the small-ball probability, bypassing the hard-threshold indicator obstacle.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788953536.7929878,
+      "updated_at": 1788954425.7347016,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788954425.7347,
+          "by": "planner",
+          "note": "Subgoal 1 (spectral truncation variance and tail bound) successfully formalized."
+        }
+      ]
+    },
+    "paper_3": {
+      "id": "paper_3",
+      "type": "paper",
+      "content": "Frazier, Martin, Robert, & Rousseau (2018) 'Asymptotic properties of approximate Bayesian computation' (arXiv:1803.10986). This work establishes that posterior contraction in rejection ABC is driven by the small-ball probabilities of the chosen discrepancy measure near zero, providing a blueprint for the asymptotic analysis of MMD-ABC.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1788953596.5907063,
+      "updated_at": 1788953596.5907073,
+      "history": []
+    },
+    "paper_4": {
+      "id": "paper_4",
+      "type": "paper",
+      "content": "Sriperumbudur, Gretton, Györfi, Schölkopf, & Lanckriet (2010) 'Hilbert Space Embeddings and Metrics on Probability Measures'. This paper links the spectral properties (Fourier transform / eigenvalue decay) of kernel integral operators to the topological and convergence metrization properties of MMD.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1788953596.6094878,
+      "updated_at": 1788953596.609489,
+      "history": []
+    },
+    "counterexample_1": {
+      "id": "counterexample_1",
+      "type": "counterexample",
+      "content": "Explicit calculation of $\\text{MMD}^2(P_0, P_\\theta)$ for 1D Gaussian location families $P_0 = \\mathcal{N}(0,1)$ and $P_\\theta = \\mathcal{N}(\\theta,1)$ using a Gaussian kernel $k_h(x,y) = \\exp(-(x-y)^2/(2h^2))$ via Fourier representation: $\\text{MMD}^2(P_0, P_\\theta) = \\frac{h}{\\sqrt{2+h^2}} \\left(1 - \\exp\\left(-\\frac{\\theta^2}{2(2+h^2)}\\right)\\right)$. For small $\\theta$, $\\text{MMD}^2(P_0, P_\\theta) \\asymp \\frac{\\theta^2}{2+h^2}$, confirming identifiability exponent $\\beta = 1$ with preconstant depending on kernel bandwidth $h$.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788953644.0040922,
+      "updated_at": 1788953770.0119524,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788953770.0119503,
+          "by": "planner",
+          "note": "Added explicit MMD integration results supporting the constant prefactor dependency."
+        }
+      ]
+    },
+    "hypothesis_2": {
+      "id": "hypothesis_2",
+      "type": "hypothesis",
+      "content": "Dimension-Dependent Preconstant Curse: In parametric MMD-ABC, rather than a worse exponent $\\beta$ in the identifiability modulus $\\mathrm{MMD}(P_\\theta, P_0) \\ge c \\|\\theta - \\theta_0\\|^\\beta$, smooth kernels suffer from an exponentially decaying preconstant $c(d) \\propto a^{-d}$ with dimension $d$. For a fixed sample size $n$ or tolerance $\\epsilon$, this decay acts as an effective identifiability loss, requiring the tolerance $\\epsilon$ to scale exponentially with $d$ to maintain a non-vanishing posterior acceptance rate, which degrades the practical ABC contraction rate in high dimensions.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788953644.0360005,
+      "updated_at": 1788954762.9372213,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788954073.5754826,
+          "by": "planner",
+          "note": "Confirmed by explicit calculation for the Gaussian location family: the identifiability preconstant c(d) decays exponentially as (1 + 1/(2\nu))^{-(d+2)/4}, driving an exponential dimension curse in the posterior contraction rate."
+        },
+        {
+          "at": 1788954359.0669403,
+          "by": "planner",
+          "note": "Rigorously confirmed in d dimensions via exact analytical calculation in lemma_3."
+        },
+        {
+          "at": 1788954762.9372146,
+          "by": "planner",
+          "note": "Confirmed by counterexample flex_6: choosing a dimension-adaptive bandwidth h = Theta(sqrt{d}) prevents the exponential decay of the prefactor (h^2/(h^2+2))^{d/2} -> 0, successfully bypassing the dimension-dependent preconstant curse."
+        }
+      ]
+    },
+    "obstacle_4": {
+      "id": "obstacle_4",
+      "type": "obstacle",
+      "content": "Degeneracy of the ABC Denominator via Spectral Decay: Bounding the ABC posterior denominator from below requires ensuring a non-vanishing prior mass for the acceptance region {\\theta : \\widehat{\\mathrm{MMD}}^2(P_n, P_{\\theta, m}) \\le \\epsilon_n^2}. Taylor-expanding the population MMD around the true parameter \\theta_0 yields \\mathrm{MMD}^2(P_0, P_\\theta) \\approx (\\theta - \\theta_0)^T H(\\theta_0) (\\theta - \\theta_0), where H(\\theta_0) is the Hessian. If the kernel's Mercer eigenvalues decay rapidly, the eigenvalues of H(\\theta_0) decay correspondingly in directions of high-frequency eigenfunctions, making the acceptance region extremely narrow along those dimensions and exponentially shrinking the prior volume of the accepted region.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1788953697.0889103,
+      "updated_at": 1788954587.7353513,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788954330.0240483,
+          "by": "planner",
+          "note": "Confirmed via worker derivation that rapid kernel eigenvalue decay \\lambda_j drives \\lambda_{\\min}(H(\\theta_0)) to zero when parameter variations align with high-frequency eigenfunctions."
+        },
+        {
+          "at": 1788954556.0871992,
+          "by": "planner",
+          "note": "Counterexamples demonstrate that Taylor expansions and Hessian existence fail for unbounded kernels under heavy-tailed models, reinforcing that kernel boundedness is a prerequisite for local volume shrinkage analysis."
+        },
+        {
+          "at": 1788954567.7809312,
+          "by": "planner",
+          "note": "Clarified by sketcher: Acceptance region is infinitely flat/wide along high-frequency directions (semi-axis lengths r_k = epsilon / sqrt(nu_k) -> infinity), causing unidentifiability rather than prior volume shrinkage."
+        }
+      ]
+    },
+    "idea_2": {
+      "id": "idea_2",
+      "type": "idea",
+      "content": "RKHS Trace Independence vs. Spectral Decay Curse: Although the total trace of the kernel integral operator \\int k(x,x) dP_0(x) is bounded by \\sup_x k(x,x) independently of the dimension (preserving the O_p(n^{-1/2}) concentration rate of the empirical MMD), the individual eigenvalues decay slower as \\lambda_j \\sim j^{-2s/d}$ in high dimensions d. This slow decay does not degrade empirical convergence but flattens the population MMD profile around \\theta_0, causing a severe parameter sensitivity loss (either an inflated exponent \\beta or a vanishing preconstant c).",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788953697.0974264,
+      "updated_at": 1788954509.698278,
+      "history": []
+    },
+    "lemma_2": {
+      "id": "lemma_2",
+      "type": "lemma",
+      "content": "Hoeffding Projection Variance under Spectral Representation: For a kernel with Mercer spectral representation $k(x,y) = \\sum_{j=1}^\\infty \\lambda_j e_j(x) e_j(y)$ with orthonormal eigenfunctions $e_j$ with respect to a reference measure $P_0$, the variance of the first-order projection (Hoeffding projection) of the empirical MMD is given by $\\operatorname{Var}_{X \\sim P_0}(\\mathbb{E}_{Y \\sim P_\\theta}[k(X, Y)]) = \\sum_{j=1}^\\infty \\lambda_j^2 (\\mu_{0, j} - \\mu_{\\theta, j})^2 \\operatorname{Var}(e_j(X))$, where $\\mu_{0, j} = \\mathbb{E}_{X \\sim P_0}[e_j(X)]$ and $\\mu_{\\theta, j} = \\mathbb{E}_{Y \\sim P_\\theta}[e_j(Y)]$. This formula demonstrates that rapid eigenvalue decay suppresses the variance of the empirical MMD estimator by dampening high-frequency components, but simultaneously degrades parameter sensitivity in directions aligned with high-frequency eigenfunctions.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788953861.7085626,
+      "updated_at": 1788954684.5321982,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788953992.3043685,
+          "by": "planner",
+          "note": "Confirmed via U-statistic Hoeffding chaos decomposition: first-order projection variance is sum_{j=1}^infty lambda_j^2 (mu_{0,j} - mu_{theta,j})^2 Var(e_j(X))."
+        }
+      ]
+    },
+    "paper_5": {
+      "id": "paper_5",
+      "type": "paper",
+      "content": "Cloninger (2018) 'Bounding the Error From Reference Set Kernel Maximum Mean Discrepancy' (arXiv:1812.04594). Establishes non-asymptotic error bounds for approximating MMD via a subset of R reference points and weights, controlled by the spectral decay of kernel Laplacian eigenfunctions. Suggests that projecting onto low-frequency eigenfunctions captures almost all MMD energy, offering a mechanism to accelerate MMD computation in large-sample or ABC regimes.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1788954231.1022415,
+      "updated_at": 1788954231.1022425,
+      "history": []
+    },
+    "note_1": {
+      "id": "note_1",
+      "type": "note",
+      "content": "Exact MMD for Gaussian location family P_0 = N(0, I_d) and P_theta = N(theta, I_d) with kernel k(x,y) = exp(-gamma ||x-y||^2): MMD^2(P_0, P_\theta) = 2 (1 + 4\boldsymbol{\beta})^{-d/2} [1 - \text{correction}]$. The preconstant decays as $(1+4\theta)^{-d/2}$ or $(1+4\nu)^{-d/2}$, proving the dimension-dependent preconstant curse.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788954307.9663775,
+      "updated_at": 1788954762.9472225,
+      "history": [],
+      "notes": [
+        {
+          "at": 1788954762.947221,
+          "by": "planner",
+          "note": "Exact MMD formula calculation shows kernel bandwidth scaling h = Theta(sqrt{d}) maintains a non-vanishing prefactor asymptotic to e^{-1} in high dimensions."
+        }
+      ]
+    },
+    "lemma_3": {
+      "id": "lemma_3",
+      "type": "lemma",
+      "content": "Volume Shrinkage in High-Dimensional ABC Acceptance Regions: For a Gaussian location family in dimension d with isotropic prior, the parameter acceptance region has a volume scaling as V_d ≈ (2΀e ̄Ε^2 / (d w C_Γ))^{d/2}, leading to an exponentially vanishing prior mass and acceptance probability as d → ∑ unless tolerance scales with dimension.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788954433.103537,
+      "updated_at": 1788954433.1035388,
+      "history": []
+    },
+    "obstacle_5": {
+      "id": "obstacle_5",
+      "type": "obstacle",
+      "content": "Failure and Dimensional Explosion of Naive Spectral Truncation in MMD-ABC: If the true parameter theta_0 or perturbation lies along high-frequency kernel eigenfunctions, fixed-order spectral truncation yields zero signal or a massive truncation error that grows exponentially in dimension d unless truncation level K_n scales exponentially, rendering naive spectral truncation vacuous in high dimensions without smoothness constraints.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1788954456.7586918,
+      "updated_at": 1788954456.758692,
+      "history": []
+    },
+    "idea_3": {
+      "id": "idea_3",
+      "type": "idea",
+      "content": "Sobolev Norm Constrained Parameter Classes for MMD-ABC: Restricting the parameter-to-distribution mapping via Sobolev norm bounds on the score operator nabla_theta P_theta in terms of the kernel's eigenbasis rules out high-frequency activation, rescuing spectral truncation and small-ball probability bounds in high dimensions.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1788954456.7733686,
+      "updated_at": 1788954456.7733688,
+      "history": []
+    },
+    "theorem_1": {
+      "id": "theorem_1",
+      "type": "theorem",
+      "content": "Optimal Kernel Smoothness and Minimax Rates in Non-Parametric MMD-ABC: For a parameter theta in a Sobolev ellipsoid of smoothness p, and a kernel with Mercer eigenvalue decay lambda_j ~ j^{-2s/d}, the MMD-ABC posterior contraction rate balances empirical estimation variance and ill-posedness. If s < d/2 (rough kernel), empirical MMD estimation is slow (rate n^{-s/d}), yielding posterior contraction n^{-sp/(d(s+p))}. If s > d/2 (smooth kernel), empirical MMD converges at n^{-1/2}, but high-frequency parameter differences are heavily damped, yielding rate n^{-p/(2(s+p))}. The optimal smoothness is s* = d/2, achieving the minimax non-parametric rate n^{-p/(d+2p)}.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788954715.1007464,
+      "updated_at": 1788954715.1007473,
+      "history": []
+    }
+  },
+  "edges": [
+    {
+      "source": "hypothesis_1",
+      "target": "problem",
+      "relation": "possible_approach"
+    },
+    {
+      "source": "obstacle_3",
+      "target": "problem",
+      "relation": "blocks"
+    },
+    {
+      "source": "lemma_1",
+      "target": "obstacle_3",
+      "relation": "related_to"
+    },
+    {
+      "source": "paper_2",
+      "target": "obstacle_1",
+      "relation": "related_to"
+    },
+    {
+      "source": "idea_1",
+      "target": "obstacle_1",
+      "relation": "addresses"
+    },
+    {
+      "source": "idea_1",
+      "target": "lemma_1",
+      "relation": "depends_on"
+    },
+    {
+      "source": "counterexample_1",
+      "target": "hypothesis_1",
+      "relation": "contradicts"
+    },
+    {
+      "source": "hypothesis_2",
+      "target": "hypothesis_1",
+      "relation": "derived_from"
+    },
+    {
+      "source": "hypothesis_2",
+      "target": "problem",
+      "relation": "possible_approach"
+    },
+    {
+      "source": "lemma_1",
+      "target": "obstacle_4",
+      "relation": "related_to"
+    },
+    {
+      "source": "obstacle_4",
+      "target": "problem",
+      "relation": "blocks"
+    },
+    {
+      "source": "idea_2",
+      "target": "lemma_1",
+      "relation": "depends_on"
+    },
+    {
+      "source": "idea_2",
+      "target": "obstacle_3",
+      "relation": "addresses"
+    },
+    {
+      "source": "lemma_1",
+      "target": "obstacle_1",
+      "relation": "related_to"
+    },
+    {
+      "source": "hypothesis_1",
+      "target": "lemma_1",
+      "relation": "depends_on"
+    },
+    {
+      "source": "counterexample_1",
+      "target": "lemma_1",
+      "relation": "related_to"
+    },
+    {
+      "source": "hypothesis_2",
+      "target": "obstacle_4",
+      "relation": "addresses"
+    },
+    {
+      "source": "hypothesis_2",
+      "target": "obstacle_4",
+      "relation": "related_to"
+    },
+    {
+      "source": "paper_5",
+      "target": "idea_1",
+      "relation": "related_to"
+    },
+    {
+      "source": "obstacle_4",
+      "target": "hypothesis_2",
+      "relation": "supports"
+    },
+    {
+      "source": "obstacle_1",
+      "target": "obstacle_2",
+      "relation": "related_to"
+    },
+    {
+      "source": "lemma_1",
+      "target": "obstacle_2",
+      "relation": "depends_on"
+    },
+    {
+      "source": "lemma_3",
+      "target": "hypothesis_2",
+      "relation": "supports"
+    },
+    {
+      "source": "lemma_3",
+      "target": "obstacle_4",
+      "relation": "supports"
+    },
+    {
+      "source": "obstacle_5",
+      "target": "idea_1",
+      "relation": "contradicts"
+    },
+    {
+      "source": "idea_3",
+      "target": "obstacle_5",
+      "relation": "addresses"
+    },
+    {
+      "source": "idea_3",
+      "target": "problem",
+      "relation": "possible_approach"
+    },
+    {
+      "source": "idea_3",
+      "target": "obstacle_4",
+      "relation": "addresses"
+    },
+    {
+      "source": "theorem_1",
+      "target": "problem",
+      "relation": "addresses"
+    },
+    {
+      "source": "theorem_1",
+      "target": "hypothesis_1",
+      "relation": "supports"
+    },
+    {
+      "source": "note_1",
+      "target": "hypothesis_2",
+      "relation": "supports"
+    }
+  ]
+}

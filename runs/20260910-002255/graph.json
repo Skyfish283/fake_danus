@@ -1,0 +1,16 @@
+{
+  "problem": "Call a function f : ℝ → ℝ angelic (resp. devilish) if there exist polynomials p and q with real coefficients such that for all real numbers x, f(x) is equal to p(ceil(x)) + ceil(q(x)) (resp. p(floor(x)) + floor(q(x)).\n \nFind the largest real number c with the following property: given non constant polynomials f and g that are angelic and devilish respectively, if there is a real number s such that f(s) ≠ g(s), then there is a real number t such that |f(t) - g(t)| ≥ c.",
+  "nodes": {
+    "problem": {
+      "id": "problem",
+      "type": "problem",
+      "content": "Call a function f : ℝ → ℝ angelic (resp. devilish) if there exist polynomials p and q with real coefficients such that for all real numbers x, f(x) is equal to p(ceil(x)) + ceil(q(x)) (resp. p(floor(x)) + floor(q(x)).\n \nFind the largest real number c with the following property: given non constant polynomials f and g that are angelic and devilish respectively, if there is a real number s such that f(s) ≠ g(s), then there is a real number t such that |f(t) - g(t)| ≥ c.",
+      "status": "UNVERIFIED",
+      "created_by": "user",
+      "created_at": 1788965575.608741,
+      "updated_at": 1788965575.608741,
+      "history": []
+    }
+  },
+  "edges": []
+}

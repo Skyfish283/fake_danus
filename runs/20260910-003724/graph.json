@@ -1,0 +1,86 @@
+{
+  "problem": "Call a function f : ℝ → ℝ angelic (resp. devilish) if there exist polynomials p and q with real coefficients such that for all real numbers x, f(x) is equal to p(ceil(x)) + ceil(q(x)) (resp. p(floor(x)) + floor(q(x)).\n \nFind the largest real number c with the following property: given non constant functions f and g that are angelic and devilish respectively, if there is a real number s such that f(s) ≠ g(s), then there is a real number t such that |f(t) - g(t)| ≥ c.",
+  "nodes": {
+    "problem": {
+      "id": "problem",
+      "type": "problem",
+      "content": "Call a function f : ℝ → ℝ angelic (resp. devilish) if there exist polynomials p and q with real coefficients such that for all real numbers x, f(x) is equal to p(ceil(x)) + ceil(q(x)) (resp. p(floor(x)) + floor(q(x)).\n \nFind the largest real number c with the following property: given non constant functions f and g that are angelic and devilish respectively, if there is a real number s such that f(s) ≠ g(s), then there is a real number t such that |f(t) - g(t)| ≥ c.",
+      "status": "UNVERIFIED",
+      "created_by": "user",
+      "created_at": 1788966444.4602308,
+      "updated_at": 1788966444.460231,
+      "history": []
+    },
+    "idea_1": {
+      "id": "idea_1",
+      "type": "idea",
+      "content": "Consider the functions $f(x) = \\epsilon \\lceil x \\rceil$ and $g(x) = \\epsilon \\lfloor x \\rfloor$ for a small real number $\\epsilon > 0$. Both $f$ and $g$ are non-constant, with $f$ being angelic ($p(y) = \\epsilon y, q(x) = 0$) and $g$ being devilish ($A(y) = \\epsilon y, B(x) = 0$). For any $t \\in \\mathbb{R}$, $|f(t) - g(t)|$ is either $0$ (if $t$ is an integer) or $\\epsilon$ (otherwise). Since $\\epsilon$ can be arbitrarily small, this family suggests $c$ might be $0$, unless there is an implicit constraint (e.g., integer coefficients for $p, q$) or a gap in our interpretation of the definition.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1788966473.664415,
+      "updated_at": 1788966473.6644151,
+      "history": []
+    },
+    "counterexample_1": {
+      "id": "counterexample_1",
+      "type": "counterexample",
+      "content": "Let $\\epsilon > 0$ be any positive real number. Define the angelic function $f(x) = \\epsilon \\lceil x \\rceil$ (using $p(y) = \\epsilon y$ and $q(x) = 0$) and the devilish function $g(x) = \\epsilon \\lfloor x \\rfloor$ (using $p(y) = \\epsilon y$ and $q(x) = 0$). Both $f$ and $g$ are non-constant, and they differ for any non-integer. However, for all $t \\in \\mathbb{R}$, $|f(t) - g(t)|$ is either $0$ (if $t$ is an integer) or $\\epsilon$ (otherwise). Thus, $\\sup_{t} |f(t) - g(t)| = \\epsilon$. If the problem allows arbitrary real coefficients with no other restrictions, this forces $c \\le \\epsilon$ for all $\\epsilon > 0$, hence $c = 0$.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788966521.1747036,
+      "updated_at": 1788966521.174704,
+      "history": []
+    },
+    "note_1": {
+      "id": "note_1",
+      "type": "note",
+      "content": "The toy_example worker confirmed that with real coefficients, scaling the angelic and devilish functions by a small epsilon allows the maximum difference to be arbitrarily small (specifically, epsilon), which suggests that c = 0 unless the problem implicitly requires integer coefficients, or has another hidden constraint.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788966588.6518133,
+      "updated_at": 1788966588.6518145,
+      "history": []
+    },
+    "approach_1": {
+      "id": "approach_1",
+      "type": "approach",
+      "content": "Decomposition Plan: Analyze the problem under two main interpretations of the coefficients. Interpretation A: The coefficients of $p$ and $q$ are real, leading to $c = 0$ due to scaling. Interpretation B: The coefficients of $p$ and $q$ are integers, which restricts the function values to integers and leads to $c = 1$. We will evaluate both branches to determine the intended scope of the problem.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788966618.5717776,
+      "updated_at": 1788966618.5717778,
+      "history": []
+    },
+    "note_2": {
+      "id": "note_2",
+      "type": "note",
+      "content": "The searcher identified that 'angelic' and 'devilish' functions (corresponding to '天使函数' and '魔鬼函数' in Chinese, or 'ангельская функция' and 'дьявольская функция' in Russian) are likely from a math olympiad such as the Chinese Mathematical Olympiad, a regional league, or the Tournament of Towns. If the coefficients of the polynomials $p$ and $q$ are restricted to integers, then both $f(x)$ and $g(x)$ must be integer-valued, which directly implies $|f(t) - g(t)| \\ge 1$ whenever they differ, making $c = 1$. If real coefficients are allowed, scaling suggests $c = 0$.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788966676.175105,
+      "updated_at": 1788966676.1751058,
+      "history": []
+    },
+    "lemma_1": {
+      "id": "lemma_1",
+      "type": "lemma",
+      "content": "Under the assumption that the polynomials $p$ and $q$ are restricted to have integer coefficients, then for any $x \\in \\mathbb{R}$, $p(\\lceil x \\rceil)$ and $p(\\lfloor x \\rfloor)$ are integers, and likewise $\\lceil q(x) \\rceil$ and $\\lfloor q(x) \\rfloor$ are integers. Thus, any angelic function $f(x)$ and devilish function $g(x)$ must be integer-valued for all $x \\in \\mathbb{R}$. Consequently, if there is some $s$ such that $f(s) \\neq g(s)$, then $|f(s) - g(s)| \\ge 1$. Choosing $t = s$ yields $|f(t) - g(t)| \\ge 1$, which implies $c = 1$.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788966757.7131045,
+      "updated_at": 1788966757.713105,
+      "history": []
+    },
+    "lemma_2": {
+      "id": "lemma_2",
+      "type": "lemma",
+      "content": "Under the assumption of arbitrary real coefficients for $p$ and $q$, we can scale any non-constant angelic and devilish functions by an arbitrary $\\epsilon > 0$. Specifically, $f(x) = \\epsilon \\lceil x \\rceil$ is angelic and $g(x) = \\epsilon \\lfloor x \\rfloor$ is devilish. For these functions, $|f(t) - g(t)| \\le \\epsilon$ for all $t \\in \\mathbb{R}$. As $\\epsilon \\to 0$, this forces $c = 0$.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1788966757.7224524,
+      "updated_at": 1788966757.7224524,
+      "history": []
+    }
+  },
+  "edges": []
+}

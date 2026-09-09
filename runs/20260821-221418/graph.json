@@ -1,0 +1,16 @@
+{
+  "problem": "consider the sequence defined as a_1 = k, and a_n = \\sum_{i=1}^{n-1}a_i^i. for what values of k does the sequence converge?",
+  "nodes": {
+    "problem": {
+      "id": "problem",
+      "type": "problem",
+      "content": "consider the sequence defined as a_1 = k, and a_n = \\sum_{i=1}^{n-1}a_i^i. for what values of k does the sequence converge?",
+      "status": "UNVERIFIED",
+      "created_by": "user",
+      "created_at": 1787316258.6188538,
+      "updated_at": 1787316258.618854,
+      "history": []
+    }
+  },
+  "edges": []
+}

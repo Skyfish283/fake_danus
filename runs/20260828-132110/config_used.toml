@@ -1,0 +1,58 @@
+# Effective configuration for this run. API keys are redacted.
+# Source: C:\Users\samfe\OneDrive\Desktop\math_agent\run_config.toml
+
+[run]
+mode = "main"
+problem = """
+Consider a branching process representation of an SEIR model. What are some possible ways to approximating the model for low population counts, in the context of partially observed branching processes to use in Bayesian filtering? Consider models such as multinomial models, HMMs, multivariate Poisson. 
+
+An example of a methodology for non small population counts is this paper, which is summarised. This can be inspiration for you. 
+
+This paper develops a Gaussian approximation for the transition function of continuous-time multitype branching processes, enabling fast Bayesian inference via Kalman filtering with computational cost independent of population size. The authors also propose a hybrid method that switches between a particle filter (for small populations) and the Gaussian approximation (for large populations) to balance accuracy and efficiency. The methods are validated on SEIR and SE8I8R epidemic models and applied to COVID-19 data from Victoria, Australia, demonstrating orders-of-magnitude speedups over standard particle filter approaches with minimal bias in posterior distributions when populations are sufficiently large.
+"""
+tag = ""
+resume = "C:/Users/samfe/OneDrive/Desktop/math_agent/runs/20260823-214638"
+
+[budget]
+max_planner_calls = 1000
+max_worker_calls = 1000
+max_wall_clock_seconds = 10000
+max_concurrent_workers = 6
+
+[models]
+planner = "adaptive"
+explorer = "adaptive"
+mathematician = "adaptive"
+skeptic = "adaptive"
+verifier = "adaptive"
+baseline = "adaptive"
+
+[thinking]
+planner = "HIGH"
+explorer = "HIGH"
+mathematician = "HIGH"
+skeptic = "HIGH"
+verifier = "HIGH"
+baseline = "HIGH"
+
+[api_keys]
+default = "set (...WRQw)"
+planner = "set (...Kf7w)"
+explorer = "set (...vd7Y)"
+mathematician = "set (...wlqw)"
+skeptic = "set (...OsMA)"
+baseline = "not set"
+
+[adaptive]
+ladder = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
+cooldown_seconds = 180
+
+[literature]
+openalex_mailto = "math-agent-prototype@example.com"
+search_result_limit = 8
+
+[viewer]
+enabled = true
+port = 8765
+open_browser = true
+poll_ms = 1000

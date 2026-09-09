@@ -1,0 +1,44 @@
+# Effective configuration for this run. API keys are redacted.
+# Source: C:\Users\samfe\OneDrive\Desktop\math_agent\run_config.toml
+
+[run]
+mode = "main"
+problem = "Consider a sequence defined as a_1 = k, a_n = sum_{i = 1}^{n-1} a_i^i. for what values of k does the sequence converge?"
+tag = ""
+resume = ""
+
+[budget]
+max_planner_calls = 1000
+max_worker_calls = 1000
+max_wall_clock_seconds = 1800
+max_concurrent_workers = 4
+
+[models]
+planner = "adaptive"
+explorer = "adaptive"
+mathematician = "adaptive"
+skeptic = "adaptive"
+baseline = "adaptive"
+
+[thinking]
+planner = "HIGH"
+explorer = "HIGH"
+mathematician = "HIGH"
+skeptic = "HIGH"
+baseline = "HIGH"
+
+[api_keys]
+default = "set (...Kf7w)"
+planner = "set (...vd7Y)"
+explorer = "set (...wlqw)"
+mathematician = "set (...OsMA)"
+skeptic = "set (...WRQw)"
+baseline = "set (...Kf7w)"
+
+[adaptive]
+ladder = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
+cooldown_seconds = 180
+
+[literature]
+openalex_mailto = "math-agent-prototype@example.com"
+search_result_limit = 8

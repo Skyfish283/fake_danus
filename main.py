@@ -22,11 +22,12 @@ from .events.event_loop import Event, Supervisor
 from .gemini_client import USAGE, set_note_sink
 from .graph.graph import ResearchGraph
 from .graph.storage import attach_autosave, load_graph
-from .models import get_all_key_roles
 from .run_log import RunLog, new_run_dir
 from .viewer import start_viewer
 
-MAIN_ROLES = ("planner",) + get_all_key_roles()
+# Model roles the full system calls. API keys are shared pool-wide, so this
+# only selects which banner lines and model choices to show.
+MAIN_ROLES = ("planner", "worker")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -147,7 +148,7 @@ def build_summary(supervisor: Supervisor) -> str:
 
 async def run(options: RunOptions) -> int:
     try:
-        config.require_api_keys(MAIN_ROLES)
+        config.require_api_keys()
     except config.MissingAPIKey as exc:
         print(exc, file=sys.stderr)
         return 1
@@ -200,12 +201,7 @@ async def run(options: RunOptions) -> int:
         "System",
         "worker slots: flex_1..flex_6, any role per assignment "
         "(searcher, toy_example, counterexample, decomposer, sketcher, verifier); "
-        "billed by role's key pool (explorer / mathematician / skeptic)",
-    )
-    log.line(
-        "System",
-        f"verifier: {config.model_status('verifier')} | "
-        "key from the explorer pool (no key of its own)",
+        "all slots share the [api_keys].keys pool",
     )
     log.line("System", f"problem: {problem}")
 

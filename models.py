@@ -21,34 +21,17 @@ from typing import Iterable, Sequence
 # [models] and [thinking]. All autonomous workers share the "worker" role.
 ROLES = ("planner", "worker", "baseline")
 
-# [api_keys] names for the autonomous worker architecture.
-# Each worker slot gets its own key (worker_1, worker_2, ..., worker_6).
-# The number of worker keys should match max_concurrent_workers in [budget].
-KEY_ROLES = ("planner", "baseline")
-WORKER_KEY_PREFIX = "worker_"
-MAX_WORKERS = 6
-
-def get_worker_key_names() -> tuple[str, ...]:
-    """Return the list of worker key names based on MAX_WORKERS."""
-    return tuple(f"{WORKER_KEY_PREFIX}{i}" for i in range(1, MAX_WORKERS + 1))
-
-def get_all_key_roles() -> tuple[str, ...]:
-    """Return all API key role names including planner, baseline, and all workers."""
-    return KEY_ROLES + get_worker_key_names()
-
-# [api_keys] names for the autonomous worker architecture.
-ALL_KEY_ROLES = get_all_key_roles()
-
 # Whole-run switch in [models].provider. Mixing providers in one run is not allowed.
 PROVIDERS = ("gemini", "glm")
 DEFAULT_PROVIDER = "gemini"
 
-# Gemini Flash-family IDs. Edit here if Google renames one.
+# Gemini Flash-family IDs, strongest to cheapest. Edit here if Google renames one.
 GEMINI_MODELS = (
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
 )
 
 # Z.AI GLM IDs. Edit here if Z.AI renames one.
@@ -83,37 +66,39 @@ _cooldown_seconds: float = DEFAULT_COOLDOWN_SECONDS
 # model ID -> monotonic timestamp before which we should not prefer it.
 _demoted_until: dict[str, float] = {}
 
-# Substrings that mean "this model is busy right now", as opposed to a bad
-# request, which no amount of stepping down would fix.
-_CONTENTION_MARKERS = (
+# Substrings that mean "this call failed because of load", as opposed to a
+# bad request, which no amount of retrying would fix. Split by flavor:
+#
+# - quota: the *key* (or its project) is throttled. Another key on a
+#   different quota may still work, so rotate keys first. But when every key
+#   reports quota exhaustion together, the keys almost certainly share one
+#   project quota and rotation cannot help.
+# - overload: the *model* is saturated. No key will work on this tier right
+#   now, so confirm on one more key (cheap insurance against key-specific
+#   weirdness) and then step down instead of grinding through every key.
+_QUOTA_MARKERS = (
     "429",
-    "503",
     "resource_exhausted",
     "resource exhausted",
-    "unavailable",
-    "overloaded",
     "quota",
     "rate limit",
     "too many requests",
 )
 
+_OVERLOAD_MARKERS = (
+    "503",
+    "unavailable",
+    "overloaded",
+)
+
+# Backwards-compatible union; prefer contention_kind() for new code.
+_CONTENTION_MARKERS = _QUOTA_MARKERS + _OVERLOAD_MARKERS
+
 _ROLE_ALIASES = {
     "baseline_a": "baseline",
     "baseline_b_synthesis": "baseline",
     "smoke_test": "planner",
-    # Flex slots share a specialised worker's key pool, never the planner key.
-    "flex_1": "explorer",
-    "flex_2": "mathematician",
-    "flex_3": "skeptic",
-    "flex_4": "explorer",
-    "flex_5": "mathematician",
-    "flex_6": "skeptic",
 }
-
-
-def worker_slot_to_key(slot_index: int) -> str:
-    """Map a worker slot index (0-based) to its API key name (e.g., worker_1)."""
-    return f"{WORKER_KEY_PREFIX}{slot_index + 1}"
 
 
 def known_models(provider: str = DEFAULT_PROVIDER) -> tuple[str, ...]:
@@ -172,6 +157,9 @@ def config_role(call_role: str) -> str:
         return role
     if role in _ROLE_ALIASES:
         return _ROLE_ALIASES[role]
+    if role.startswith("flex_"):
+        # Worker slots bill the shared key pool and run worker models.
+        return "worker"
     if role.startswith("baseline_b_"):
         # Arm B's workers run the worker models, so they use the worker's key.
         inner = role[len("baseline_b_") :]
@@ -203,8 +191,23 @@ def mark_contended(model: str) -> float:
 
 def is_contention_error(error: BaseException) -> bool:
     """True when the failure means "busy", not "wrong request"."""
+    return contention_kind(error) is not None
+
+
+def contention_kind(error: BaseException) -> str | None:
+    """Classify a contention error as "quota" or "overload", else None.
+
+    Quota means the key (or its project) is throttled: try another key.
+    Overload means the model tier is saturated: step down promptly.
+    Quota markers are checked first, since a 429 is definitively about
+    allowance even when the message also mentions availability.
+    """
     text = f"{type(error).__name__} {error}".lower()
-    return any(marker in text for marker in _CONTENTION_MARKERS)
+    if any(marker in text for marker in _QUOTA_MARKERS):
+        return "quota"
+    if any(marker in text for marker in _OVERLOAD_MARKERS):
+        return "overload"
+    return None
 
 
 def candidates(call_role: str, explicit_model: str | None = None) -> list[str]:

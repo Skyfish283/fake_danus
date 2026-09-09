@@ -1,0 +1,46 @@
+# Effective configuration for this run. API keys are redacted.
+# Source: C:\Users\samfe\OneDrive\Desktop\math_agent\run_config.toml
+
+[run]
+mode = "main"
+problem = """
+Call a function f : ℝ → ℝ angelic (resp. devilish) if there exist polynomials p and q with real coefficients such that for all real numbers x, f(x) is equal to p(ceil(x)) + ceil(q(x)) (resp. p(floor(x)) + floor(q(x)).
+ 
+Find the largest real number c with the following property: given non constant polynomials f and g that are angelic and devilish respectively, if there is a real number s such that f(s) ≠ g(s), then there is a real number t such that |f(t) - g(t)| ≥ c.
+"""
+tag = ""
+resume = ""
+
+[budget]
+max_planner_calls = 1000
+max_worker_calls = 1000
+max_wall_clock_seconds = 1800
+max_concurrent_workers = 6
+
+[models]
+provider = "gemini"
+planner = "adaptive"
+worker = "adaptive"
+baseline = "adaptive"
+
+[thinking]
+planner = "HIGH"
+worker = "HIGH"
+baseline = "HIGH"
+
+[api_keys]
+keys = ["set (...Kf7w)", "set (...vd7Y)", "set (...wlqw)", "set (...OsMA)", "set (...WRQw)", "set (...QxrA)"]
+
+[adaptive]
+ladder = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
+cooldown_seconds = 180
+
+[literature]
+openalex_mailto = "math-agent-prototype@example.com"
+search_result_limit = 8
+
+[viewer]
+enabled = true
+port = 8765
+open_browser = true
+poll_ms = 1000

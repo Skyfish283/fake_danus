@@ -1,0 +1,859 @@
+{
+  "problem": "Consider a branching process representation of an SEIR model. What are some possible ways to approximating the model for low population counts, in the context of partially observed branching processes to use in Bayesian filtering? Consider models such as multinomial models, HMMs, multivariate Poisson. \n\nAn example of a methodology for non small population counts is this paper, which is summarised. This can be inspiration for you. \n\nThis paper develops a Gaussian approximation for the transition function of continuous-time multitype branching processes, enabling fast Bayesian inference via Kalman filtering with computational cost independent of population size. The authors also propose a hybrid method that switches between a particle filter (for small populations) and the Gaussian approximation (for large populations) to balance accuracy and efficiency. The methods are validated on SEIR and SE8I8R epidemic models and applied to COVID-19 data from Victoria, Australia, demonstrating orders-of-magnitude speedups over standard particle filter approaches with minimal bias in posterior distributions when populations are sufficiently large.",
+  "nodes": {
+    "problem": {
+      "id": "problem",
+      "type": "problem",
+      "content": "Consider a branching process representation of an SEIR model. What are some possible ways to approximating the model for low population counts, in the context of partially observed branching processes to use in Bayesian filtering? Consider models such as multinomial models, HMMs, multivariate Poisson. \n\nAn example of a methodology for non small population counts is this paper, which is summarised. This can be inspiration for you. \n\nThis paper develops a Gaussian approximation for the transition function of continuous-time multitype branching processes, enabling fast Bayesian inference via Kalman filtering with computational cost independent of population size. The authors also propose a hybrid method that switches between a particle filter (for small populations) and the Gaussian approximation (for large populations) to balance accuracy and efficiency. The methods are validated on SEIR and SE8I8R epidemic models and applied to COVID-19 data from Victoria, Australia, demonstrating orders-of-magnitude speedups over standard particle filter approaches with minimal bias in posterior distributions when populations are sufficiently large.",
+      "status": "UNVERIFIED",
+      "created_by": "user",
+      "created_at": 1787487398.0907118,
+      "updated_at": 1787487398.0907123,
+      "history": []
+    },
+    "approach_1": {
+      "id": "approach_1",
+      "type": "approach",
+      "content": "Multinomial and Dirichlet-Multinomial approximations for discrete time steps of low-population SEIR multitype branching processes, using multinomial transitions conditioned on current state counts.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787487435.0517535,
+      "updated_at": 1787488471.7790613,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488471.7790596,
+          "by": "planner",
+          "note": "A major breakthrough has been made: under partial Binomial reporting, the posterior under a Dirichlet-Multinomial prior collapses to a 1D scalar sum instead of a 3D simplex sum, making Assumed Density Filtering (ADF) computationally tractable."
+        }
+      ]
+    },
+    "approach_2": {
+      "id": "approach_2",
+      "type": "approach",
+      "content": "Finite-State Hidden Markov Model (HMM) and Chemical Master Equation (CME) state space truncation (such as Finite State Projection) for continuous-time low-population SEIR models, enabling exact forward filtering.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787487435.0574374,
+      "updated_at": 1787487740.5859585,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787487599.898983,
+          "by": "planner",
+          "note": "Exact state-space size scales as O(N^3), reaching 23,426 states at N=50 and 176,851 at N=100. Truncation (FSP) or dynamic bounding is strictly necessary for N >= 50."
+        }
+      ]
+    },
+    "approach_3": {
+      "id": "approach_3",
+      "type": "approach",
+      "content": "Multivariate Poisson processes, Poisson thinning representations, and Hawkes process formulations for continuous-time multitype SEIR branching processes under partial observations.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787487435.0604,
+      "updated_at": 1787488940.805899,
+      "history": []
+    },
+    "approach_4": {
+      "id": "approach_4",
+      "type": "approach",
+      "content": "Rao-Blackwellized Particle Filtering (RBPF) and hybrid discrete-grid/particle filters tailored for low to moderate population counts where specific components can be integrated out analytically.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787487435.0632284,
+      "updated_at": 1787488453.972394,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787487706.1932049,
+          "by": "planner",
+          "note": "RBPF is supported by exact binomial thinning marginalization of observation likelihoods Y_{k+1} | I_k."
+        }
+      ]
+    },
+    "paper_1": {
+      "id": "paper_1",
+      "type": "paper",
+      "content": "Morsomme & Xu (2022) 'Exact Inference for Stochastic Epidemic Models via Uniformly Ergodic Block Sampling': Proposes a surrogate process data-augmented MCMC filter/inference framework for discretely observed stochastic epidemic models (SIR/SEIR), allowing exact latent trajectory proposals.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1787487455.16234,
+      "updated_at": 1787487455.1623402,
+      "history": []
+    },
+    "lemma_1": {
+      "id": "lemma_1",
+      "type": "lemma",
+      "content": "Explicit Discrete-Time Binomial/Multinomial Dynamics for SEIR Branching Processes: New exposures U_{t+1} ~ Bin(S_t, 1 - exp(-\\beta I_t \\Delta t / N)), new infectious V_{t+1} ~ Bin(E_t, 1 - exp(-\\sigma \\Delta t)), new recoveries W_{t+1} ~ Bin(I_t, 1 - exp(-\\gamma \\Delta t)). Under partial observation models Y_t ~ Bin(W_{t+1}, \\rho), exact Bayesian filtering updates are analytically computable over small discrete lattice state spaces.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787487479.7689087,
+      "updated_at": 1787488118.289929,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488020.6539714,
+          "by": "planner",
+          "note": "Skeptic evaluation proved O(\\Delta t^2) discretization hazard bias and failure to capture within-interval secondary infections during epidemic growth phases."
+        },
+        {
+          "at": 1787488118.2899277,
+          "by": "planner",
+          "note": "Mathematician derived the conditional expectations of the binomial/multinomial transition steps: E[S_{t+1}|X_t] = S_t(1 - p_E(I_t)), E[E_{t+1}|X_t] = E_t(1 - p_I) + S_t p_E(I_t), and E[I_{t+1}|X_t] = I_t(1 - p_R) + E_t p_I. While these first-order conditional moments are mathematically simple, the joint distribution of transition events involves convolving multiple independent binomial and multinomial variables, which becomes computationally expensive without further approximation."
+        }
+      ]
+    },
+    "approach_5": {
+      "id": "approach_5",
+      "type": "approach",
+      "content": "Piecewise Decoupled Multitype Branching Process (PD-MBP) Surrogate: Decouples nonlinear SEIR transmission rates into constant-rate multitype branching or linear death processes over discrete observation intervals (t_{k-1}, t_k]. Over each interval, transition events (S -> E -> I -> R) are generated independently as order statistics from truncated exponential/gamma/Weibull distributions, enabling exact block Metropolis-Hastings filtering/smoothing with uniform ergodicity for small to moderate populations.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787487546.1979883,
+      "updated_at": 1787488735.129861,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488735.129859,
+          "by": "planner",
+          "note": "Confirmed by skeptic critique to suffer from a fatal zero-likelihood trap when I_t = 0 and E_t > 0, alongside severe discretization hazard bias, rendering pure PD-MBP unusable for Bayesian filtering near extinction."
+        }
+      ]
+    },
+    "obstacle_1": {
+      "id": "obstacle_1",
+      "type": "obstacle",
+      "content": "Cubic State-Space Explosion in Exact HMM / CME Filtering for Closed SEIR: For population size N, the exact discrete SEIR state space has size |S| = (N+3)(N+2)(N+1)/6 = O(N^3). Dense transition matrix updates require O(N^6) operations and sparse representations require O(N^3) state updates per filter step, creating severe computational and memory barriers for exact HMM filtering when N >= 50 (|S| = 23,426).",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787487599.6855078,
+      "updated_at": 1787488252.3316665,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488252.331666,
+          "by": "planner",
+          "note": "Krylov subspace projection methods reduce transition complexity from O(|S|^2) or dense O(|S|^3) matrix exponentials to O(m |S|) sparse matrix-vector multiplications, bypassing the dense storage and computation barrier for populations N <= 50."
+        }
+      ]
+    },
+    "obstacle_2": {
+      "id": "obstacle_2",
+      "type": "obstacle",
+      "content": "Boundary Breakdown of Gaussian / Linear Noise Approximations in Low-Population SEIR: Near extinction boundaries (I(t) -> 0), Kurtz's Density Limit Theorem hypotheses fail due to boundary effects and density dependence. Gaussian LNA yields non-zero probability of negative populations and fails to model discrete absorption or extinction probabilities, rendering standard Kalman filters invalid for small N.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787487632.550599,
+      "updated_at": 1787487632.5505993,
+      "history": []
+    },
+    "approach_6": {
+      "id": "approach_6",
+      "type": "approach",
+      "content": "Factorial Moment Duality for Low-Population SEIR Jump Processes: Duality via factorial moment kernels H(x, y) = prod_k binom(x_k, y_k) maps the nonlinear SEIR jump process X(t) = (E(t), I(t)) to a dual process Y(t) on dual degree space. For low population counts or low-order moment tracking, transition expectations P_t H(x, y) = H(x, P_Y^t y) can be evaluated on a dramatically smaller dual state space, enabling exact moment-based Bayesian filtering without propagating the full O(N^3) state distribution.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787487658.610933,
+      "updated_at": 1787488669.7222364,
+      "history": []
+    },
+    "lemma_2": {
+      "id": "lemma_2",
+      "type": "lemma",
+      "content": "Binomial Thinning Marginalization for Partial SEIR Observations: If observation Y_{k+1} ~ Bin(W_{k+1}, \\rho) where W_{k+1} ~ Bin(I_k, 1 - exp(-\\gamma \\Delta t)) is the true recovery count, then Y_{k+1} | I_k ~ Bin(I_k, \\rho (1 - exp(-\\gamma \\Delta t))). In Rao-Blackwellized Particle Filtering (RBPF), conditionally on the nonlinear exposure process S_k, latent stages E_k and I_k progress as linear multitype decay processes with analytically computable conditional expectations and observation likelihoods.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787487698.5172105,
+      "updated_at": 1787487785.06763,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787487785.0676286,
+          "by": "planner",
+          "note": "Verifier detected a GAP in Poisson conjugate continuous-time updates: exact Poisson thinning requires unbounded initial populations; closed SEIR models with fixed N require Binomial conditional updates instead."
+        }
+      ]
+    },
+    "lemma_3": {
+      "id": "lemma_3",
+      "type": "lemma",
+      "content": "Exponentially Tilted Dirichlet-Multinomial Posterior under Binomial Observations: For discrete-time SEIR branching process models constrained to total population N, placing a Dirichlet-Multinomial DM(N, alpha) prior over state counts X_t = (S_t, E_t, I_t, R_t) combined with a Binomial reporting observation Y_t ~ Binomial(I_t, rho) yields an exact exponentially tilted Dirichlet-Multinomial posterior distribution p(X_t | Y_t) proportional to Binomial(Y_t; I_t, rho) DM(X_t; N, alpha). This provides a tractable parametric update family for low-population discrete filtering on the simplex.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787487760.5189536,
+      "updated_at": 1787488620.17255,
+      "history": []
+    },
+    "obstacle_3": {
+      "id": "obstacle_3",
+      "type": "obstacle",
+      "content": "Breakdown of Exact Poisson-Binomial Conjugacy in Closed SEIR Models: Unbounded multitype branching process Poisson thinning assumes independent transitions without total population conservation. In closed SEIR populations with constraint S_t + E_t + I_t + R_t = N, finite population limits and nonlinear infection intensity beta * S * I / N invalidate exact Poisson conjugate filtering, necessitating discrete Binomial/Multinomial accounting or conditional particle filtering.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787487784.9069643,
+      "updated_at": 1787487801.0999675,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787487801.099965,
+          "by": "planner",
+          "note": "Skeptic analysis confirmed physical bound violations: Poisson transitions allow non-zero probability for generation of new exposures exceeding available susceptible count (U_{t+1} > S_t) in low populations (e.g., N=10), creating a severe support mismatch and violating population conservation limits."
+        }
+      ]
+    },
+    "lemma_4": {
+      "id": "lemma_4",
+      "type": "lemma",
+      "content": "Piecewise Decoupled Multitype Branching Process (PD-MBP) Transition Probabilities for SEIR: Over observation block T_k = (t_{k-1}, t_k], freezing per-capita hazard h_k = \\beta I_k^* / N decouples the non-linear continuous-time SEIR system into independent continuous-time Markov chains S -> E -> I -> R with linear multi-stage transition rates h_k, \\sigma, \\gamma. Explicit single-individual transition probabilities P_{ij}(\\Delta t) for i, j in {S, E, I, R} are analytically derived via convolution of exponential holding times, enabling exact block Metropolis-Hastings proposals and trajectory updates for low to moderate populations.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787487832.6961477,
+      "updated_at": 1787487832.6961482,
+      "history": []
+    },
+    "lemma_5": {
+      "id": "lemma_5",
+      "type": "lemma",
+      "content": "Explicit Closed-Form Single-Individual Transition Matrix for Piecewise-Linear SEIR Branching Process: Given constant per-capita hazard rate h = beta * I^* / N over interval dt, single-individual transition probabilities p_{ij}(dt) are analytically computable in closed form: p_{SS}(dt) = exp(-h dt), p_{SE}(dt) = h/(sigma - h)*(exp(-h dt) - exp(-sigma dt)), p_{EI}(dt) = sigma/(gamma - sigma)*(exp(-sigma dt) - exp(-gamma dt)), p_{II}(dt) = exp(-gamma dt). Transitions from compartment i follow independent Multinomial(X_i, p_{i*}(dt)) distributions, defining an exact discrete transition convolution operator.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787487853.8266437,
+      "updated_at": 1787488628.7184083,
+      "history": []
+    },
+    "lemma_6": {
+      "id": "lemma_6",
+      "type": "lemma",
+      "content": "PGF ODE System and Truncated Matrix Exponential for Low-Population SEIR: For linearized baseline transmission rate beta_0 = beta S / N, the PGF system du_1/dt = sigma(u_2 - u_1), du_2/dt = beta_0 u_1 u_2 + gamma - (beta_0 + gamma)u_2 yields recursive ODEs for transition probabilities P((E_{t+dt}, I_{t+dt}) = (e', i') | (E_t, I_t) = (e, i)). On truncated state spaces K = E+I <= 30, direct evaluation via matrix exponential exp(Q dt) allows accurate forward HMM updates with O(K^3) computational complexity.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787487898.8844166,
+      "updated_at": 1787487898.8844166,
+      "history": []
+    },
+    "approach_7": {
+      "id": "approach_7",
+      "type": "approach",
+      "content": "Hybrid Adaptive Model-Switching Filter (Discrete Branching / RBPF <-> Continuous Gaussian LNA): Combines exact low-population discrete-state approximations (PD-MBP / RBPF) near extinction boundaries with continuous Gaussian Linear Noise Approximation (LNA) Kalman filtering when compartment counts exceed critical thresholds, preventing boundary breakdown while maintaining scalable inference.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787487899.3384993,
+      "updated_at": 1787487899.3384995,
+      "history": []
+    },
+    "obstacle_4": {
+      "id": "obstacle_4",
+      "type": "obstacle",
+      "content": "Discretization Hazard Bias and Within-Interval Secondary Infection Deficit in Discrete Binomial SEIR: Freezing transmission hazard over interval \\Delta t in discrete-time Binomial models introduces an O(\\Delta t^2) first-moment bias. During growth phases (\\sigma E_t > \\gamma I_t), latent individuals progressing E -> I within [t, t+\\Delta t] generate secondary infections that are missed, causing systematic underestimation of transmission unless \\Delta t \\ll \\min(1/\\sigma, N/(\\beta I_t)).",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787488020.6410193,
+      "updated_at": 1787488020.6410193,
+      "history": []
+    },
+    "approach_8": {
+      "id": "approach_8",
+      "type": "approach",
+      "content": "Dynamic Finite State Projection (FSP) with Adaptive State-Space Truncation: Maintains a time-varying active subset of states \\Omega(t) = \\{x : p_x(t) > \\delta\\}. During prediction, \\Omega(t)$ is dynamically expanded by tracing transition paths out of the current set to bound the total outflow intensity \\sum_{u \\in \\Omega(t), v \\notin \\Omega(t)} q_{uv} p_u(t) < \\epsilon. Post-observation, states with posterior probability below \\delta are pruned, restricting the active state space size from O(N^3) to a local neighborhood around the probability mass.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488085.7066703,
+      "updated_at": 1787488873.3627918,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488686.8181758,
+          "by": "planner",
+          "note": "Encountered severe theoretical and computational obstacles including black swan observation collapse, likelihood bias from sub-stochastic truncation, and dynamic re-indexing overhead compared to static Krylov methods."
+        }
+      ]
+    },
+    "paper_2": {
+      "id": "paper_2",
+      "type": "paper",
+      "content": "Vieille, B. (2024) 'Characterization of the distribution of marked self-exciting Hawkes and Markov point processes'. The thesis derives multi-temporal Laplace transforms and moment equations for Hawkes and Markovian point processes, which are highly relevant for tracking low-population epidemic event histories.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1787488101.0971806,
+      "updated_at": 1787488101.0971806,
+      "history": []
+    },
+    "obstacle_5": {
+      "id": "obstacle_5",
+      "type": "obstacle",
+      "content": "Weight Collapse and Proposal-Likelihood Mismatch in SEIR Rao-Blackwellized Particle Filtering: In RBPF for low-population SEIR models, when the reporting rate \\rho is small or there is a sudden burst of infections, sampling S_{t+1} from the transition prior leads to a massive mismatch with the observation likelihood. This causes particle weight collapse (where all weights drop to zero simultaneously) and severe sample impoverishment, rendering the filter unstable.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787488132.089875,
+      "updated_at": 1787488178.1126506,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488178.1126497,
+          "by": "planner",
+          "note": "We can resolve this weight collapse obstacle by exploiting the small state space of S to evaluate the marginal likelihood for all possible S_{t+1} values, enabling exact sampling from the optimal proposal."
+        }
+      ]
+    },
+    "approach_9": {
+      "id": "approach_9",
+      "type": "approach",
+      "content": "PGF Characteristic-ODE and FFT-based Coefficient Extraction for Low-Population Filtering: Under a localized multitype branching approximation for the infected classes (E, I) with S approx N, the joint probability generating function G(z_E, z_I, t) satisfies a backward PDE. By solving the characteristic ODEs du_E/dt = \\sigma (u_I - u_E), du_I/dt = \\beta_0 u_E u_I - (\\beta_0 + \\gamma) u_I + \\gamma with initial conditions u_E(0) = z_E, u_I(0) = z_I, we get the individual PGFs u_E(t), u_I(t). For any initial state (E_0, I_0), the joint PGF at time t is G(z_E, z_I, t) = [u_E(t)]^{E_0} [u_I(t)]^{I_0}. The exact transition probabilities P((E_t, I_t) = (e, i) | (E_0, I_0) = (E_0, I_0)) are the Taylor coefficients of G(z_E, z_I, t) at (0,0). By evaluating G on a 2D grid of complex values on the unit circle (z_E, z_I) = (exp(2\\pi i k / M_E), exp(2\\pi i l / M_I)) and applying a 2D Inverse Fast Fourier Transform (2D IFFT), we can extract the complete joint transition probability distribution up to truncation limits M_E, M_I in O(M_E M_I \\log(M_E M_I)) operations, bypassing state-space matrix exponentials entirely.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488153.122799,
+      "updated_at": 1787488768.1978815,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488212.6305766,
+          "by": "planner",
+          "note": "Worker flex_3 confirmed that the joint transition probability matrix under the branching approximation can be factored as [G_E]^e * [G_I]^i, facilitating rapid multidimensional FFT extraction of transition tensors."
+        },
+        {
+          "at": 1787488768.1978784,
+          "by": "planner",
+          "note": "Confirmed that unit-circle evaluation avoids real-argument MGF blow-up, though numerical stiffness necessitates high-order adaptive integration."
+        }
+      ]
+    },
+    "lemma_7": {
+      "id": "lemma_7",
+      "type": "lemma",
+      "content": "Exact Latent Joint Matrix Recursion for SEIR RBPF: Let M_t(e, i) = P(E_t = e, I_t = i | S_{0:t}, Y_{1:t}) be the conditional joint PMF of the latent stages, represented as a matrix of size at most (N+1)x(N+1). Given a proposed S_{t+1}, which defines the new exposures U_{t+1} = S_t - S_{t+1}, the joint transition and observation probability is given by summing over the previous latent states: P(S_{t+1}, E_{t+1}=e', I_{t+1}=i', Y_{t+1}=y | S_{0:t}, Y_{1:t}) = \\sum_{e, i} M_t(e, i) * Bin(U_{t+1}; S_t, p_{SE}(i)) * Bin(V_{t+1}; e, p_{EI}) * Bin(W_{t+1}; i, p_{IR}) * Bin(y; W_{t+1}, \\rho), where V_{t+1} = e + U_{t+1} - e', W_{t+1} = i + V_{t+1} - i', p_{SE}(i) = 1 - exp(-\\beta i \\Delta t / N), p_{EI} = 1 - exp(-\\sigma \\Delta t), and p_{IR} = 1 - exp(-\\gamma \\Delta t). The marginal likelihood alpha_{t+1}(S_{t+1}) is the sum of this expression over all (e', i'), and the updated latent matrix is M_{t+1}(e', i') = P(S_{t+1}, e', i', y | S_{0:t}, Y_{1:t}) / alpha_{t+1}(S_{t+1}).",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488175.8420694,
+      "updated_at": 1787488850.596446,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488787.4124649,
+          "by": "planner",
+          "note": "Verified by verifier (task_72): exact latent joint matrix recursion and compartment conservation equations hold."
+        },
+        {
+          "at": 1787488850.5964434,
+          "by": "planner",
+          "note": "Verified by verifier flex_1: the conditional joint PMF update step and transition probabilities are mathematically rigorous and consistent with SEIR conservation laws."
+        }
+      ]
+    },
+    "approach_10": {
+      "id": "approach_10",
+      "type": "approach",
+      "content": "Optimal Proposal Rao-Blackwellized Particle Filter (OP-RBPF) for Low Populations: Because the state space of S_{t+1} is discrete and small (at most S_t + 1 <= N + 1), we can compute the marginal likelihood alpha_{t+1}(s) for every possible value s in {0, ..., S_t} using the joint matrix recursion. The optimal proposal distribution for S_{t+1} is then exactly P(S_{t+1} = s | S_{0:t}, Y_{1:t+1}) = alpha_{t+1}(s) / \\sum_{k=0}^{S_t} alpha_{t+1}(k). Sampling S_{t+1} from this exact discrete distribution completely eliminates proposal-likelihood mismatch and weight collapse (obstacle_5), providing a stable filter with computational cost O(N^4) per time step (or O(N^3) with fast convolution) which is extremely efficient for N <= 50.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488176.1904845,
+      "updated_at": 1787488850.7799118,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488828.9422743,
+          "by": "planner",
+          "note": "Supported by exact joint matrix recursion; completely eliminates weight collapse for N <= 50 with efficient O(N^4) or O(N^3) complexity."
+        },
+        {
+          "at": 1787488843.9678504,
+          "by": "planner",
+          "note": "Transition step complexity successfully reduced to O(N^3) via factored intermediate convolutions."
+        },
+        {
+          "at": 1787488850.779908,
+          "by": "planner",
+          "note": "Backed by verified exact latent joint matrix recursion (lemma_7), eliminating proposal-likelihood mismatch and ensuring O(N^4) filtering stability."
+        }
+      ]
+    },
+    "obstacle_6": {
+      "id": "obstacle_6",
+      "type": "obstacle",
+      "content": "Moment Closure Problem in SEIR Factorial Moment Duality: Due to the non-linear exposure term beta * S * I / N, the infinitesimal generator of the SEIR process couples moment equations of different orders. Specifically, applying the generator to a polynomial test function of degree d yields terms of degree d+1, such as S * I^2. This infinite hierarchy of moment equations (the moment closure problem) implies that the dual process cannot be restricted to a finite state space. Exact moment-based filtering is therefore impossible without heuristic moment closure approximations, which introduce unquantifiable errors especially in low-population regimes.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787488232.2248604,
+      "updated_at": 1787488814.3740077,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488718.2602797,
+          "by": "planner",
+          "note": "Mathematician confirmed that the dual generator includes non-conservative terms (failing conservation conditions without Feynman-Kac weights), preventing pure Markovian dual moment filtering without additional weight tracking."
+        },
+        {
+          "at": 1787488814.374006,
+          "by": "planner",
+          "note": "Confirmed by mathematician derivation: infinitesimal generator application to factorial moments yields exposure terms of degree y_S + y_E + y_I + 1, proving the infinite moment hierarchy and moment closure problem for non-linear SEIR."
+        }
+      ]
+    },
+    "lemma_8": {
+      "id": "lemma_8",
+      "type": "lemma",
+      "content": "Exact Krylov Subspace Filtering for Low-Population CTMC SEIR: For population N <= 50, the exact state space size is |S| = (N+3)(N+2)(N+1)/6 <= 23,426. The CTMC generator matrix Q is extremely sparse, containing at most 3 non-zero off-diagonal elements per row (corresponding to S->E, E->I, and I->R transitions). Krylov subspace projection methods (such as Arnoldi or Lanczos iterations) compute the transition action w = exp(Q^T * delta_t) * v using only sparse matrix-vector multiplications. This reduces the computational complexity per filter step to O(m * |S|) where m << |S| is the Krylov subspace dimension (typically m approx 30), enabling exact continuous-time forward filtering updates without truncating the state space.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488252.3061528,
+      "updated_at": 1787488902.556109,
+      "history": []
+    },
+    "obstacle_7": {
+      "id": "obstacle_7",
+      "type": "obstacle",
+      "content": "Susceptible Depletion and Nonlinearity Breakdown in PGF-based Branching Approximations: Branching process approximations of epidemics (such as in approach_5 and approach_9) rely on approximating the infection rate beta * S_t * I_t / N as a linear rate beta_0 * I_t by assuming S_t is approximately constant over the interval. In low populations (e.g., N <= 50), each transition S -> E significantly decreases S_t (by 1/N, i.e., 2%), meaning the linear branching process approximation quickly overestimates the number of secondary infections. This accumulation of discretization hazard bias causes severe overestimation of the epidemic trajectory during growth phases.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787488285.1041403,
+      "updated_at": 1787488285.1041405,
+      "history": []
+    },
+    "paper_3": {
+      "id": "paper_3",
+      "type": "paper",
+      "content": "Vaughan & Stadler (2025) 'Bayesian Phylodynamic Inference of Multitype Population Trajectories Using Genomic Data': Infers multitype trajectories in birth-death branching processes by integrating over trait-specific population size functions.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1787488285.113313,
+      "updated_at": 1787488285.113313,
+      "history": []
+    },
+    "paper_4": {
+      "id": "paper_4",
+      "type": "paper",
+      "content": "Laha & Majumdar (2022) 'A multi-type branching process model for epidemics with application to COVID-19': Employs a multi-type branching process with non-identical Poisson offspring distributions to model epidemics under varying parameters.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1787488285.1227999,
+      "updated_at": 1787488285.1227999,
+      "history": []
+    },
+    "lemma_9": {
+      "id": "lemma_9",
+      "type": "lemma",
+      "content": "State-Dependent Ogata Thinning for Hawkes-Based Closed SEIR: The non-linear closed-population SEIR model with total population N_pop can be exactly represented as an Ogata-thinned multi-type Hawkes process. The unconstrained linear Hawkes process has exposure intensity \\lambda_E^0(t) = \\beta I(t^-). By thinning exposure events with state-dependent probability S(t^-)/N_pop and updating S(t) = S(t^-) - 1, the resulting process exactly matches the closed-population epidemic dynamics. This preserves the branching structure of the underlying proposal process and provides an exact continuous-time representation that respects the population constraint.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488305.579901,
+      "updated_at": 1787488305.5799015,
+      "history": []
+    },
+    "lemma_10": {
+      "id": "lemma_10",
+      "type": "lemma",
+      "content": "Whittle-Barbour Coupling Bounds for Regime-Switching SEIR Branching Approximations: By Whittle's branching approximation (1955) and Stein's method for Poisson/coupling approximations (Barbour and Utev, 2004), the total variation distance between the path distribution of the exact non-linear closed SEIR jump process and its multitype branching process limit (where S_t is assumed constant) over a finite time horizon tau is bounded by d_TV(P_SEIR, P_CTMBP) <= C * (1 - S(tau)/N) * sum_{t <= tau} I_t. This explicit TV-bound defines a rigorous state-dependent threshold for when the filter should dynamically switch from a linear branching process to a closed-population model (such as CME or FSP) to control approximation error.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488344.9773893,
+      "updated_at": 1787488344.9773936,
+      "history": []
+    },
+    "obstacle_8": {
+      "id": "obstacle_8",
+      "type": "obstacle",
+      "content": "Dirichlet-Multinomial Non-Closure under SEIR Transitions: While the observation update under binomial reporting yields an exact exponentially tilted Dirichlet-Multinomial (DM) distribution, the transition step (composed of independent Binomial/Multinomial transitions for S -> E -> I -> R) does not preserve the DM functional form. Propagating the DM distribution through nonlinear or even linear binomial transitions leads to mixture distributions with rapidly expanding terms, preventing closed-form conjugate filtering across multiple time steps.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787488377.6406963,
+      "updated_at": 1787488822.0854156,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488822.085415,
+          "by": "planner",
+          "note": "Skeptic critique confirms that the multinomial/binomial transition step destroys the Dirichlet-Multinomial functional form, causing algebraic non-closure and compulsory projection errors."
+        }
+      ]
+    },
+    "approach_11": {
+      "id": "approach_11",
+      "type": "approach",
+      "content": "State-Corrected PGF Branching Approximation (SC-PGF): A modified PGF-based branching filter that dynamically adjusts the transmission rate beta_0(t) within each observation interval to account for expected susceptible depletion (obstacle_7). This is achieved by solving a coupled deterministic ODE for expected depletion or by introducing a quadratic correction term to the characteristic ODEs, preserving FFT coefficient extraction (approach_9) while reducing discretization hazard bias.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787488401.2618413,
+      "updated_at": 1787488401.2618413,
+      "history": []
+    },
+    "lemma_11": {
+      "id": "lemma_11",
+      "type": "lemma",
+      "content": "Exact and Linearized PGF PDEs for SEIR Jump Processes: Let G(u, v, w, t) = E[u^S v^E w^I] be the joint PGF. The exact continuous-time SEIR Markov chain yields a second-order PDE: dG/dt = (beta/N) * (v - u) * w * d^2G/(du dw) + sigma * (w - v) * dG/dv + gamma * (1 - w) * dG/dw. The bilinear infection term makes the PDE second-order, meaning the standard Method of Characteristics is inapplicable. However, linearizing around a constant susceptible population S_t approx S_k decouples S, reducing G(v, w, t) = E[v^E w^I] to a first-order PDE: dG/dt = beta_0 * (v - 1) * w * dG/dw + sigma * (w - v) * dG/dv + gamma * (1 - w) * dG/dw, where beta_0 = beta * S_k / N. This first-order system is exactly solvable via characteristics.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488422.251922,
+      "updated_at": 1787488422.2519226,
+      "history": []
+    },
+    "lemma_12": {
+      "id": "lemma_12",
+      "type": "lemma",
+      "content": "Exact Rao-Blackwellized State-Space Partitioning for Low-Population SEIR: Conditioning on the susceptible trajectory S_{1:t} (or exposure counts U_{1:t}) reduces the transition of the latent states (E_t, I_t) to a linear, time-varying Markov chain. The conditional distribution P(E_t, I_t | S_{1:t}, Y_{1:t-1}) can be represented as a dense matrix M_t of size at most (N+1)x(N+1). Under Binomial/Multinomial transition dynamics and Binomial reporting Y_t ~ Bin(W_t, rho), M_t is updated recursively via exact matrix multiplication of size O(N^2) per step, avoiding particle representation of the latent compartments.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488453.7638738,
+      "updated_at": 1787488453.7638748,
+      "history": []
+    },
+    "lemma_13": {
+      "id": "lemma_13",
+      "type": "lemma",
+      "content": "Analytic Marginal Likelihood and Posterior Moments for Dirichlet-Multinomial under Binomial Observations: Let the prior state distribution be Dirichlet-Multinomial $\\mathbf{X} = (S, E, I, R) \\sim \\text{DM}(N, \\boldsymbol{\\alpha})$ with $\\alpha_0 = \\sum \\alpha_k$, and let the observation model be $Y \\sim \\text{Binomial}(I, \\rho)$. The joint distribution is given by $P(\\mathbf{X}, Y=y) = \\binom{I}{y} \\rho^y (1-\\rho)^{I-y} \\frac{\\Gamma(N+1)\\Gamma(\\alpha_0)}{\\Gamma(N+\\alpha_0)} \\prod_k \\frac{\\Gamma(X_k+\\alpha_k)}{\\Gamma(X_k!)\\Gamma(\\alpha_k)}$. By grouping terms and summing over the simplex, the marginal likelihood $P(Y=y)$ simplifies to a one-dimensional sum over $I \\in \\{y, \\dots, N\\}$ of Beta-Binomial-like factors rather than an $O(N^3)$ sum over the 3D simplex. This 1D collapse enables exact and efficient computation of the posterior marginal moments $E[X_j | Y=y]$ and $E[X_j X_k | Y=y]$, which are required to project the posterior back onto the optimal Dirichlet-Multinomial parameter vector $\\boldsymbol{\\alpha}_{t|t}$ via Assumed Density Filtering.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488471.7556207,
+      "updated_at": 1787488693.8298626,
+      "history": []
+    },
+    "lemma_14": {
+      "id": "lemma_14",
+      "type": "lemma",
+      "content": "Factorial Moment Generator Action and Dual State Mappings for SEIR: For the joint state (S, E, I) with factorial power H(X, y) = (S)_{y_S} (E)_{y_E} (I)_{y_I}, the infinitesimal generator terms are: (1) Exposure: beta * S * I / N shifts the dual index since A_{exp} H = (beta / N) * I * [ (S-1)_{y_S} (E+1)_{y_E} (I)_{y_I} - (S)_{y_S} (E)_{y_E} (I)_{y_I} ], which after expansion involves terms of degree y_S + y_E + y_I + 1, confirming coupling to higher moments. (2) Transition E -> I: sigma * E * [ (E-1)_{y_E} (I+1)_{y_I} - (E)_{y_E} (I)_{y_I} ] maps to a linear combination of dual states of degree at most y_E + y_I. (3) Recovery I -> R: gamma * I * [ (I-1)_{y_I} - (I)_{y_I} ] maps to -gamma * y_I * H(X, y) plus lower-order terms. Thus, only the non-linear infection term causes the moment-closure problem, while linear transitions permit exact closed dual evolution.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488500.7456722,
+      "updated_at": 1787488500.7456727,
+      "history": []
+    },
+    "approach_12": {
+      "id": "approach_12",
+      "type": "approach",
+      "content": "Multivariate Poisson Branching Process with State-Dependent Intensity Scaling (MP-SDIC): Approximates the joint transitions using independent Poisson variables for event counts (exposures, transitions, recoveries) over a small interval dt, where the intensities are updated recursively using the current state. To handle the closed population constraint S_t + E_t + I_t + R_t = N, a multinomial scaling or a multivariate Poisson-Binomial correction is applied post-hoc to prevent negative susceptible states while preserving the branching structure and the tractability of Poisson updates.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787488500.7892966,
+      "updated_at": 1787488500.7892988,
+      "history": []
+    },
+    "approach_13": {
+      "id": "approach_13",
+      "type": "approach",
+      "content": "Dirichlet-Multinomial Assumed Density Filtering (DM-ADF): Approximates the joint state distribution of (S_t, E_t, I_t, R_t) on the simplex as a Dirichlet-Multinomial (DM) distribution. Although the true transition step does not preserve the DM form, we compute the exact first and second-order joint moments of the state counts after the transition step (which is a mixture of multinomials) and use moment matching (ADF) to project the distribution back into the closest DM family. This provides a closed-form, extremely fast, and population-constrained recursive filter for small N.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787488500.8455458,
+      "updated_at": 1787488822.0931592,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787488822.093158,
+          "by": "planner",
+          "note": "While 1D marginal likelihood collapse (lemma_13) enables efficient moment updates, the non-closure established in obstacle_8 means DM-ADF functions as an assumed density approximation with non-zero projection bias."
+        }
+      ]
+    },
+    "obstacle_9": {
+      "id": "obstacle_9",
+      "type": "obstacle",
+      "content": "Zero-Likelihood Trap and Discretization Hazard Bias at Zero-Infectious Boundary: In Piecewise Decoupled Multitype Branching Process (PD-MBP) models (approach_5, lemma_5), the transmission hazard is frozen as $h_k = \\beta I_{t_{k-1}} / N$. When $I_{t_{k-1}} = 0$ but $E_{t_{k-1}} > 0$, this leads to $h_k = 0$, implying zero probability of any new exposures ($S \\to E$) over the interval $[t_{k-1}, t_k]$. However, in the true continuous-time model, exposed individuals can transition to infectious ($E \\to I$) at some time $\\tau \\in (t_{k-1}, t_k)$, which then immediately allows new exposures to occur. This causes a complete structural failure, leading to a zero-likelihood trap in particle/Bayesian filtering where valid observations of new exposures are deemed impossible.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787488523.9869475,
+      "updated_at": 1787488523.9869483,
+      "history": []
+    },
+    "obstacle_10": {
+      "id": "obstacle_10",
+      "type": "obstacle",
+      "content": "Critical Failure Modes of Dynamic FSP in Bayesian Filtering: (1) Catastrophic filter collapse ('black swan' observations where y_t exceeds max infectious count in active set Η(t) leading to division-by-zero). (2) Systematic bias in marginal likelihood due to sub-stochastic generator truncation and artificial renormalization. (3) Topological mode amputation preventing recovery from pruned states. (4) Computational overhead paradox for N <= 100 where static sparse matrix methods (Krylov subspace) are faster than dynamic grid re-indexing.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1787488686.4117758,
+      "updated_at": 1787488686.4117765,
+      "history": []
+    }
+  },
+  "edges": [
+    {
+      "source": "paper_1",
+      "target": "problem",
+      "relation": "addresses"
+    },
+    {
+      "source": "obstacle_2",
+      "target": "problem",
+      "relation": "blocks"
+    },
+    {
+      "source": "obstacle_1",
+      "target": "approach_2",
+      "relation": "blocks"
+    },
+    {
+      "source": "lemma_2",
+      "target": "approach_4",
+      "relation": "supports"
+    },
+    {
+      "source": "obstacle_3",
+      "target": "approach_3",
+      "relation": "blocks"
+    },
+    {
+      "source": "lemma_4",
+      "target": "approach_5",
+      "relation": "supports"
+    },
+    {
+      "source": "lemma_5",
+      "target": "approach_5",
+      "relation": "supports"
+    },
+    {
+      "source": "lemma_5",
+      "target": "lemma_4",
+      "relation": "derived_from"
+    },
+    {
+      "source": "lemma_6",
+      "target": "approach_2",
+      "relation": "supports"
+    },
+    {
+      "source": "lemma_6",
+      "target": "obstacle_1",
+      "relation": "addresses"
+    },
+    {
+      "source": "approach_7",
+      "target": "obstacle_2",
+      "relation": "addresses"
+    },
+    {
+      "source": "approach_8",
+      "target": "obstacle_1",
+      "relation": "addresses"
+    },
+    {
+      "source": "approach_8",
+      "target": "approach_2",
+      "relation": "supports"
+    },
+    {
+      "source": "obstacle_5",
+      "target": "approach_4",
+      "relation": "blocks"
+    },
+    {
+      "source": "obstacle_5",
+      "target": "lemma_2",
+      "relation": "related_to"
+    },
+    {
+      "source": "approach_9",
+      "target": "obstacle_1",
+      "relation": "addresses"
+    },
+    {
+      "source": "approach_9",
+      "target": "problem",
+      "relation": "possible_approach"
+    },
+    {
+      "source": "lemma_6",
+      "target": "approach_9",
+      "relation": "related_to"
+    },
+    {
+      "source": "lemma_7",
+      "target": "approach_10",
+      "relation": "supports"
+    },
+    {
+      "source": "approach_10",
+      "target": "obstacle_5",
+      "relation": "addresses"
+    },
+    {
+      "source": "obstacle_6",
+      "target": "approach_6",
+      "relation": "blocks"
+    },
+    {
+      "source": "lemma_8",
+      "target": "obstacle_1",
+      "relation": "addresses"
+    },
+    {
+      "source": "lemma_8",
+      "target": "approach_2",
+      "relation": "supports"
+    },
+    {
+      "source": "obstacle_7",
+      "target": "approach_5",
+      "relation": "blocks"
+    },
+    {
+      "source": "obstacle_7",
+      "target": "approach_9",
+      "relation": "blocks"
+    },
+    {
+      "source": "obstacle_7",
+      "target": "problem",
+      "relation": "blocks"
+    },
+    {
+      "source": "lemma_9",
+      "target": "obstacle_3",
+      "relation": "addresses"
+    },
+    {
+      "source": "lemma_9",
+      "target": "approach_3",
+      "relation": "supports"
+    },
+    {
+      "source": "lemma_9",
+      "target": "obstacle_7",
+      "relation": "related_to"
+    },
+    {
+      "source": "lemma_10",
+      "target": "approach_7",
+      "relation": "supports"
+    },
+    {
+      "source": "lemma_10",
+      "target": "obstacle_7",
+      "relation": "addresses"
+    },
+    {
+      "source": "lemma_10",
+      "target": "obstacle_2",
+      "relation": "related_to"
+    },
+    {
+      "source": "obstacle_8",
+      "target": "approach_1",
+      "relation": "blocks"
+    },
+    {
+      "source": "obstacle_8",
+      "target": "lemma_3",
+      "relation": "contradicts"
+    },
+    {
+      "source": "approach_3",
+      "target": "problem",
+      "relation": "possible_approach"
+    },
+    {
+      "source": "approach_11",
+      "target": "obstacle_7",
+      "relation": "addresses"
+    },
+    {
+      "source": "approach_11",
+      "target": "approach_9",
+      "relation": "related_to"
+    },
+    {
+      "source": "approach_9",
+      "target": "lemma_6",
+      "relation": "related_to"
+    },
+    {
+      "source": "lemma_12",
+      "target": "approach_4",
+      "relation": "supports"
+    },
+    {
+      "source": "lemma_12",
+      "target": "lemma_7",
+      "relation": "related_to"
+    },
+    {
+      "source": "lemma_3",
+      "target": "obstacle_8",
+      "relation": "related_to"
+    },
+    {
+      "source": "lemma_14",
+      "target": "approach_6",
+      "relation": "supports"
+    },
+    {
+      "source": "lemma_14",
+      "target": "obstacle_6",
+      "relation": "related_to"
+    },
+    {
+      "source": "approach_11",
+      "target": "problem",
+      "relation": "possible_approach"
+    },
+    {
+      "source": "approach_11",
+      "target": "obstacle_8",
+      "relation": "addresses"
+    },
+    {
+      "source": "lemma_13",
+      "target": "approach_11",
+      "relation": "supports"
+    },
+    {
+      "source": "obstacle_9",
+      "target": "approach_5",
+      "relation": "blocks"
+    },
+    {
+      "source": "obstacle_9",
+      "target": "lemma_5",
+      "relation": "contradicts"
+    },
+    {
+      "source": "obstacle_9",
+      "target": "obstacle_4",
+      "relation": "related_to"
+    },
+    {
+      "source": "lemma_3",
+      "target": "approach_13",
+      "relation": "supports"
+    },
+    {
+      "source": "lemma_13",
+      "target": "approach_13",
+      "relation": "supports"
+    },
+    {
+      "source": "paper_2",
+      "target": "problem",
+      "relation": "addresses"
+    },
+    {
+      "source": "paper_3",
+      "target": "problem",
+      "relation": "addresses"
+    },
+    {
+      "source": "paper_4",
+      "target": "problem",
+      "relation": "addresses"
+    },
+    {
+      "source": "paper_3",
+      "target": "lemma_9",
+      "relation": "related_to"
+    },
+    {
+      "source": "obstacle_10",
+      "target": "approach_8",
+      "relation": "blocks"
+    },
+    {
+      "source": "approach_10",
+      "target": "lemma_7",
+      "relation": "supports"
+    },
+    {
+      "source": "approach_12",
+      "target": "obstacle_1",
+      "relation": "addresses"
+    }
+  ]
+}

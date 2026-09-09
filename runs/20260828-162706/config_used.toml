@@ -1,0 +1,59 @@
+# Effective configuration for this run. API keys are redacted.
+# Source: C:\Users\samfe\OneDrive\Desktop\math_agent\run_config.toml
+
+[run]
+mode = "main"
+problem = """
+Consider a branching process representation of an SEIR model. What are some possible ways to approximating the model for low population counts, in the context of partially observed branching processes to use in Bayesian filtering? Consider models such as multinomial models, HMMs, multivariate Poisson. 
+
+An example of a methodology for non small population counts is this paper, which is summarised. This can be inspiration for you. 
+
+This paper develops a Gaussian approximation for the transition function of continuous-time multitype branching processes, enabling fast Bayesian inference via Kalman filtering with computational cost independent of population size. The authors also propose a hybrid method that switches between a particle filter (for small populations) and the Gaussian approximation (for large populations) to balance accuracy and efficiency. The methods are validated on SEIR and SE8I8R epidemic models and applied to COVID-19 data from Victoria, Australia, demonstrating orders-of-magnitude speedups over standard particle filter approaches with minimal bias in posterior distributions when populations are sufficiently large.
+"""
+tag = ""
+resume = ""
+
+[budget]
+max_planner_calls = 1000
+max_worker_calls = 1000
+max_wall_clock_seconds = 10000
+max_concurrent_workers = 6
+
+[models]
+provider = "glm"
+planner = "glm-4.7-flash"
+explorer = "glm-4.7-flash"
+mathematician = "glm-4.7-flash"
+skeptic = "glm-4.7-flash"
+verifier = "glm-4.7-flash"
+baseline = "glm-4.7-flash"
+
+[thinking]
+planner = "HIGH"
+explorer = "HIGH"
+mathematician = "HIGH"
+skeptic = "HIGH"
+verifier = "HIGH"
+baseline = "HIGH"
+
+[api_keys]
+default = "set (...m334)"
+planner = "set (...m334)"
+explorer = "set (...vP0r)"
+mathematician = "set (...8xBn)"
+skeptic = "set (...k1xv)"
+baseline = "not set"
+
+[adaptive]
+ladder = ["glm-4.7-flash"]
+cooldown_seconds = 180
+
+[literature]
+openalex_mailto = "math-agent-prototype@example.com"
+search_result_limit = 8
+
+[viewer]
+enabled = true
+port = 8765
+open_browser = true
+poll_ms = 1000

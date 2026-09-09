@@ -1,0 +1,104 @@
+{
+  "problem": "Consider a general n player game (in game theory) with hidden information. Define a belief to be the distribution of a player's hidden information given all the public information in the game so far. prove that the optimal strategy at a certain gamestate is a function of public information and each player's belief only.",
+  "nodes": {
+    "problem": {
+      "id": "problem",
+      "type": "problem",
+      "content": "Consider a general n player game (in game theory) with hidden information. Define a belief to be the distribution of a player's hidden information given all the public information in the game so far. prove that the optimal strategy at a certain gamestate is a function of public information and each player's belief only.",
+      "status": "UNVERIFIED",
+      "created_by": "user",
+      "created_at": 1787464647.9661434,
+      "updated_at": 1787464647.966144,
+      "history": []
+    },
+    "approach_1": {
+      "id": "approach_1",
+      "type": "approach",
+      "content": "Public State Decomposition and Common Agent Reframing: Decompose the game history into public history and private histories. Transform the imperfect information game into a virtual game played by a common agent who observes public history and prescribes private strategies based on public belief states (akin to Nayyar et al. and ReBeL/DeepStack public belief state reductions).",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787464690.243349,
+      "updated_at": 1787464690.2433496,
+      "history": []
+    },
+    "obstacle_1": {
+      "id": "obstacle_1",
+      "type": "obstacle",
+      "content": "Distinction Between Private Observation and Public Belief: A player's action at a given gamestate depends on their actual private information $x_i$, not solely on the public distribution $P(x_i | h_{pub})$. If the target claim asserts strategies depend ONLY on public info and public beliefs, it may fail unless 'belief' refers to player $i$'s private posterior or private information is included.",
+      "status": "UNVERIFIED",
+      "created_by": "planner",
+      "created_at": 1787464690.2459943,
+      "updated_at": 1787464758.2206187,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787464758.220616,
+          "by": "planner",
+          "note": "Resolved by the common information prescription framework: while individual actions depend on private states, the strategic mapping (the prescription rule) depends exclusively on public information and public beliefs."
+        }
+      ]
+    },
+    "hypothesis_1": {
+      "id": "hypothesis_1",
+      "type": "hypothesis",
+      "content": "Sufficient Statistic Hypothesis for Public Belief States: In partially observable stochastic games (POSGs) with public observations, the joint distribution of hidden private histories given public history forms a sufficient statistic for evaluating continuation payoffs and optimal strategies.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787464690.249203,
+      "updated_at": 1787464690.2492032,
+      "history": []
+    },
+    "paper_1": {
+      "id": "paper_1",
+      "type": "paper",
+      "content": "Efficiency in Games With Markovian Private Information (Escobar & Toikka, 2013). Studies repeated Bayesian games with Markovian private information. While focusing on efficiency and communication, it provides structural insights into how private information states and public signals interact dynamically.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1787464704.6575968,
+      "updated_at": 1787464704.6575978,
+      "history": []
+    },
+    "approach_2": {
+      "id": "approach_2",
+      "type": "approach",
+      "content": "APS Self-Generation Operator over Public Beliefs: Define a self-generation operator $B(V)(\times)$ mapping public belief states $\\pi \\in \\Delta(X)$ to set-valued payoff correspondences. This operator uses (IC) Incentive Compatibility, (PK) Promise Keeping, and (CB) Continuation Belief updates, all structured as functions of the public belief state $\\pi$ and public history, to characterize perfect public equilibria (PPE).",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787464722.065823,
+      "updated_at": 1787464722.0658238,
+      "history": []
+    },
+    "approach_3": {
+      "id": "approach_3",
+      "type": "approach",
+      "content": "Prescription-Valued Strategies in Common Information: Reframe player strategies using the common information approach (Nayyar et al.). Instead of directly mapping private histories to actions, the public state (public history and public beliefs $\\pi$) maps to a behavioral 'prescription' $\\gamma_i: X_i \\to \\Delta(A_i)$ for each player. Player $i$'s actual action is $a_i = \\gamma_i(x_i)$. This proves that the optimal strategy $\\sigma_i$ is a function of public information, beliefs, and the private state $x_i$ through a public prescription rule.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787464722.0755637,
+      "updated_at": 1787464745.1849482,
+      "history": []
+    },
+    "lemma_1": {
+      "id": "lemma_1",
+      "type": "lemma",
+      "content": "Prescription Mapping Characterization (Nayyar et al.): In games with public observations and private information, the optimal strategy for player $i$ is a mapping from private state $x_i$ to action distributions, parameterized by a prescription function $\\gamma_i: \\mathcal{X}_i \\to \\Delta(A_i)$ that depends exclusively on the public history and the joint public belief state $\\boldsymbol{\\mu}$. Thus, the strategic choice (the prescription) depends only on public information and public beliefs.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787464745.1776536,
+      "updated_at": 1787464745.1776538,
+      "history": []
+    }
+  },
+  "edges": [
+    {
+      "source": "approach_2",
+      "target": "obstacle_1",
+      "relation": "addresses"
+    },
+    {
+      "source": "approach_1",
+      "target": "problem",
+      "relation": "possible_approach"
+    }
+  ]
+}

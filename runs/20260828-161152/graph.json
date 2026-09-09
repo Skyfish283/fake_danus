@@ -1,0 +1,149 @@
+{
+  "problem": "Consider a branching process representation of an SEIR model. What are some possible ways to approximating the model for low population counts, in the context of partially observed branching processes to use in Bayesian filtering? Consider models such as multinomial models, HMMs, multivariate Poisson. \n\nAn example of a methodology for non small population counts is this paper, which is summarised. This can be inspiration for you. \n\nThis paper develops a Gaussian approximation for the transition function of continuous-time multitype branching processes, enabling fast Bayesian inference via Kalman filtering with computational cost independent of population size. The authors also propose a hybrid method that switches between a particle filter (for small populations) and the Gaussian approximation (for large populations) to balance accuracy and efficiency. The methods are validated on SEIR and SE8I8R epidemic models and applied to COVID-19 data from Victoria, Australia, demonstrating orders-of-magnitude speedups over standard particle filter approaches with minimal bias in posterior distributions when populations are sufficiently large.",
+  "nodes": {
+    "problem": {
+      "id": "problem",
+      "type": "problem",
+      "content": "Consider a branching process representation of an SEIR model. What are some possible ways to approximating the model for low population counts, in the context of partially observed branching processes to use in Bayesian filtering? Consider models such as multinomial models, HMMs, multivariate Poisson. \n\nAn example of a methodology for non small population counts is this paper, which is summarised. This can be inspiration for you. \n\nThis paper develops a Gaussian approximation for the transition function of continuous-time multitype branching processes, enabling fast Bayesian inference via Kalman filtering with computational cost independent of population size. The authors also propose a hybrid method that switches between a particle filter (for small populations) and the Gaussian approximation (for large populations) to balance accuracy and efficiency. The methods are validated on SEIR and SE8I8R epidemic models and applied to COVID-19 data from Victoria, Australia, demonstrating orders-of-magnitude speedups over standard particle filter approaches with minimal bias in posterior distributions when populations are sufficiently large.",
+      "status": "UNVERIFIED",
+      "created_by": "user",
+      "created_at": 1787899312.7289386,
+      "updated_at": 1787899312.7289388,
+      "history": []
+    },
+    "problem_1": {
+      "id": "problem_1",
+      "type": "problem",
+      "content": "Partially Observed SEIR Branching Process with Low Population Counts. The goal is to perform Bayesian filtering for a continuous-time multitype branching process (SEIR) when the total population is small (e.g., N < 100). The standard approach (Gaussian approximation) fails or is inaccurate at these scales. We seek approximations or exact inference methods that remain valid for low counts, considering Multivariate Poisson, Multinomial, and HMM structures.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787899366.4058456,
+      "updated_at": 1787899776.8054,
+      "history": [],
+      "notes": [
+        {
+          "at": 1787899776.8053987,
+          "by": "planner",
+          "note": "Explorer identified four specific approaches: 1) Exact Finite State HMM on the simplex, 2) Set-Valued lineage tracking, 3) Multivariate Negative Binomial for overdispersion, and 4) QMC particle filters for sample impoverishment."
+        }
+      ]
+    },
+    "idea_1": {
+      "id": "idea_1",
+      "type": "idea",
+      "content": "Hybrid Gaussian-Particle Filter. A strategy for Bayesian filtering in branching processes where a Gaussian approximation (e.g., Kalman filter) is used for large populations (where it is accurate) and a particle filter is used for small populations (where it is not). This balances computational cost and accuracy.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787899454.4566915,
+      "updated_at": 1787899454.4566917,
+      "history": []
+    },
+    "idea_2": {
+      "id": "idea_2",
+      "type": "idea",
+      "content": "Multinomial Transition Model. Using a multinomial distribution to model transitions from Susceptible to Infected/Removed states in low-count branching processes, potentially avoiding the over-dispersion issues of Poisson models.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787899454.4596903,
+      "updated_at": 1787899454.4596903,
+      "history": []
+    },
+    "idea_3": {
+      "id": "idea_3",
+      "type": "idea",
+      "content": "HMM Approximation. Treating the SEIR branching process as a Hidden Markov Model where the hidden states are the population counts and observations are noisy measurements.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787899454.4627652,
+      "updated_at": 1787899454.4627655,
+      "history": []
+    },
+    "paper_1": {
+      "id": "paper_1",
+      "type": "paper",
+      "content": "Willis, A. D., & Martin, B. D. (2020). Estimating diversity in networked ecological communities. Biostatistics. Paper id: openalex:W3027354942. Discusses multinomial models for diversity indices.",
+      "status": "POTENTIALLY_RELEVANT",
+      "created_by": "planner",
+      "created_at": 1787899454.4647436,
+      "updated_at": 1787899454.4647436,
+      "history": []
+    },
+    "idea_4": {
+      "id": "idea_4",
+      "type": "idea",
+      "content": "Exact Finite State HMM on the Simplex. Discretize time into small steps and model SEIR transitions as an exact multinomial process on the simplex $\\Delta_N = \\{ \\mathbf{x} \\in \\mathbb{Z}_{\\ge 0}^4 : \\sum x_i = N \\}$. The transition kernel $P(\\mathbf{x}_{t+1} | \\mathbf{x}_t)$ is derived from Poisson event counts conditioned on $N$. This transforms the continuous branching process into a finite-state HMM, allowing for exact Bayesian filtering via state summation.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787899776.7688687,
+      "updated_at": 1787899776.7688692,
+      "history": []
+    },
+    "idea_5": {
+      "id": "idea_5",
+      "type": "idea",
+      "content": "Set-Valued (Lineage) Branching Process. For very low counts ($N < 20$), track individual lineages as a set-valued state rather than aggregated counts (S, E, I, R). Transitions represent lineage birth (infection) or death (recovery). This model naturally handles the finite population constraint without ad-hoc conditioning and captures finer stochastic structure than count-based models.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787899776.7737713,
+      "updated_at": 1787899776.7737715,
+      "history": []
+    },
+    "idea_6": {
+      "id": "idea_6",
+      "type": "idea",
+      "content": "Multivariate Negative Binomial for Low Counts. Replace Multivariate Poisson with Multivariate Negative Binomial to capture overdispersion in low-population regimes. The NB is a Poisson-Gamma mixture, providing an extra variance parameter to account for event clumping that Poisson models miss when $N$ is small.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787899776.778306,
+      "updated_at": 1787899776.7783062,
+      "history": []
+    },
+    "idea_7": {
+      "id": "idea_7",
+      "type": "idea",
+      "content": "QMC Particle Filter. Replace standard Monte Carlo sampling with Quasi-Monte Carlo (Sobol/Halton) or Latin Hypercube Sampling for particle initialization in low-population regimes. This provides uniform coverage of the finite state space, mitigating sample impoverishment where many particles map to the same state $\\mathbf{x}$.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787899776.7817237,
+      "updated_at": 1787899776.781724,
+      "history": []
+    },
+    "obstacle_1": {
+      "id": "obstacle_1",
+      "type": "obstacle",
+      "content": "State Space Complexity in Exact Finite State HMM. The state space is the simplex $\\Delta_N = \\{ \\mathbf{x} \\in \\mathbb{Z}_{\\ge 0}^4 : \\sum x_i = N \\}$. Its size is $\binom{N+3}{3}$. For the target low-count regime (e.g., $N=50$), this is approximately $23,426$ states. The transition matrix is $O(M^2)$, which implies approximately $5 \times 10^8$ operations per time step if dense, or a forward algorithm cost of $O(M^2)$. This may be prohibitive for real-time filtering.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1787899892.9524026,
+      "updated_at": 1787899892.9524033,
+      "history": []
+    }
+  },
+  "edges": [
+    {
+      "source": "problem_1",
+      "target": "idea_1",
+      "relation": "related_to"
+    },
+    {
+      "source": "problem_1",
+      "target": "idea_2",
+      "relation": "related_to"
+    },
+    {
+      "source": "problem_1",
+      "target": "idea_3",
+      "relation": "related_to"
+    },
+    {
+      "source": "problem_1",
+      "target": "idea_4",
+      "relation": "related_to"
+    },
+    {
+      "source": "idea_4",
+      "target": "obstacle_1",
+      "relation": "blocks"
+    }
+  ]
+}

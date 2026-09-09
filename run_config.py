@@ -15,9 +15,7 @@ from typing import Any, Sequence
 
 from .models import (
     ADAPTIVE,
-    ALL_KEY_ROLES,
     DEFAULT_LADDER,
-    KEY_ROLES,
     PROVIDERS,
     ROLES,
     choices_for,
@@ -50,7 +48,10 @@ _SECTIONS = {
     ),
     "models": ("provider",) + ROLES,
     "thinking": ROLES,
-    "api_keys": ("default",) + ALL_KEY_ROLES,
+    # [api_keys] is read by _read_api_keys directly (not via _table) so that
+    # legacy per-role entries can be merged into the shared pool with a
+    # deprecation warning instead of an "unknown key" warning.
+    "api_keys": ("keys",),
     "adaptive": ("ladder", "cooldown_seconds"),
     "literature": ("openalex_mailto", "search_result_limit"),
     "viewer": ("enabled", "port", "open_browser", "poll_ms"),
@@ -79,7 +80,9 @@ class RunConfig:
     provider: str = "gemini"
     models: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_MODELS))
     thinking: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_THINKING))
-    api_keys: dict[str, str] = field(default_factory=dict)
+    # Shared pool of API keys for the whole run: the planner, every worker
+    # and the baselines all draw from these. Empty entries are dropped.
+    api_keys: tuple[str, ...] = ()
 
     ladder: tuple[str, ...] = DEFAULT_LADDER
     cooldown_seconds: float = 180.0
@@ -99,7 +102,7 @@ class RunConfig:
         return any(choice == ADAPTIVE for choice in self.models.values())
 
     def roles_in_use(self) -> tuple[str, ...]:
-        """Roles a run in this mode will actually call.
+        """Model roles a run in this mode will actually call.
 
         For main mode: planner and worker roles are used.
         """
@@ -107,7 +110,8 @@ class RunConfig:
             return ("planner", "worker")
         if self.mode == "baseline_a":
             return ("baseline",)
-        return KEY_ROLES
+        # Arm B runs worker models plus a baseline synthesis call.
+        return ("worker", "baseline")
 
 
 @dataclass
@@ -171,7 +175,7 @@ def load(path: str | Path | None = None) -> RunConfig:
     budget = _table(raw, "budget", warnings)
     models = _table(raw, "models", warnings)
     thinking = _table(raw, "thinking", warnings)
-    api_keys = _table(raw, "api_keys", warnings)
+    api_keys = _read_api_keys_section(raw, warnings)
     adaptive = _table(raw, "adaptive", warnings)
     literature = _table(raw, "literature", warnings)
     viewer = _table(raw, "viewer", warnings)
@@ -215,7 +219,7 @@ def load(path: str | Path | None = None) -> RunConfig:
         provider=provider,
         models=_read_models(models, provider, warnings),
         thinking=_read_thinking(thinking, warnings),
-        api_keys=_read_api_keys(api_keys, warnings),
+        api_keys=api_keys,
         ladder=_read_ladder(adaptive, provider, warnings),
         cooldown_seconds=_number(
             adaptive, "cooldown_seconds", defaults.cooldown_seconds, warnings, "adaptive"
@@ -307,10 +311,14 @@ def render_redacted_toml(config: RunConfig, options: RunOptions | None = None) -
     lines += ["", "[thinking]"]
     lines += [f'{role} = "{config.thinking[role]}"' for role in ROLES]
     lines += ["", "[api_keys]"]
-    lines += [
-        f'{role} = "{key_fingerprint(config.api_keys.get(role, ""))}"'
-        for role in ("default",) + ALL_KEY_ROLES
-    ]
+    if config.api_keys:
+        lines.append(
+            "keys = ["
+            + ", ".join(f'"{key_fingerprint(key)}"' for key in config.api_keys)
+            + "]"
+        )
+    else:
+        lines.append("keys = []")
     lines += [
         "",
         "[adaptive]",
@@ -443,25 +451,69 @@ def _read_thinking(section: dict[str, Any], warnings: list[str]) -> dict[str, st
     return levels
 
 
-def _read_api_keys(section: dict[str, Any], warnings: list[str]) -> dict[str, str]:
-    """Read API keys from config section, supporting worker_1 through worker_N."""
-    from .models import MAX_WORKERS, WORKER_KEY_PREFIX
-    
-    keys: dict[str, str] = {}
-    # Read default and standard roles
-    for role in ("default",) + KEY_ROLES:
-        value = _text(section, role, "", warnings, "api_keys")
-        if value:
-            keys[role] = value
-    
-    # Read worker-specific keys (worker_1, worker_2, ..., worker_N)
-    for i in range(1, MAX_WORKERS + 1):
-        worker_key = f"{WORKER_KEY_PREFIX}{i}"
-        value = _text(section, worker_key, "", warnings, "api_keys")
-        if value:
-            keys[worker_key] = value
-    
-    return keys
+def _read_api_keys_section(raw: dict[str, Any], warnings: list[str]) -> tuple[str, ...]:
+    """Fetch the raw [api_keys] table without unknown-key warnings.
+
+    Legacy per-role entries are merged into the shared pool by
+    `_read_api_keys`, so they must not be flagged as unknown here.
+    """
+    section = raw.get("api_keys", {})
+    if not isinstance(section, dict):
+        warnings.append("[api_keys] should be a table; ignored")
+        return ()
+    return _read_api_keys(section, warnings)
+
+
+def _read_api_keys(section: dict[str, Any], warnings: list[str]) -> tuple[str, ...]:
+    """Read the shared API key pool.
+
+    The canonical form is a list::
+
+        [api_keys]
+        keys = ["key-one", "key-two"]
+
+    Older per-role entries (`default`, `planner`, `worker_1`, ...) are merged
+    into the same pool so existing config files keep working, with a warning
+    that they are deprecated. Blank entries are dropped and exact duplicates
+    are kept once, preserving file order.
+    """
+    pool: list[str] = []
+    seen: set[str] = set()
+
+    def _add(value: Any) -> None:
+        if not isinstance(value, str):
+            return
+        key = value.strip()
+        if key and key not in seen:
+            seen.add(key)
+            pool.append(key)
+
+    raw_keys = section.get("keys", None)
+    if raw_keys is not None:
+        if isinstance(raw_keys, list):
+            for entry in raw_keys:
+                if isinstance(entry, str) and entry.strip():
+                    _add(entry)
+                else:
+                    warnings.append("[api_keys] keys should be a list of strings; skipped a blank entry")
+        else:
+            warnings.append("[api_keys] keys should be a list of strings; ignored")
+
+    legacy = [(name, section[name]) for name in section if name != "keys"]
+    if legacy:
+        merged = [name for name, value in legacy if isinstance(value, str) and value.strip()]
+        skipped = [name for name, value in legacy if not (isinstance(value, str) and value.strip())]
+        for _name, value in legacy:
+            _add(value)
+        if merged:
+            warnings.append(
+                "[api_keys] per-role keys are deprecated and were merged into "
+                f"the shared pool ({', '.join(merged)}); use `keys = [...]` instead"
+            )
+        for name in skipped:
+            warnings.append(f"[api_keys] {name} is blank or not a string; ignored")
+
+    return tuple(pool)
 
 
 def _read_ladder(

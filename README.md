@@ -72,7 +72,7 @@ the live file is gitignored so an inline key never lands in a repo.
 | `[budget]` | The three caps plus `max_concurrent_workers` |
 | `[models]` | One model per role, or `adaptive`. Roles: `planner`, `explorer`, `mathematician`, `skeptic`, `verifier`, `baseline` |
 | `[thinking]` | `LOW` / `MEDIUM` / `HIGH` reasoning depth per role |
-| `[api_keys]` | A key per role, or a shared `default` |
+| `[api_keys]` | The shared key pool: a `keys` list billed by every caller |
 | `[adaptive]` | The fallback ladder and its cooldown |
 | `[literature]` | OpenAlex contact address, results per search |
 | `[viewer]` | The live graph view: on/off, port, browser, poll interval |
@@ -84,14 +84,16 @@ the live file is gitignored so an inline key never lands in a repo.
 
 The six specialized workers replace the old Explorer/Mathematician/Skeptic triad:
 
-| Role | Function | Bills API key pool |
-| --- | --- | --- |
-| `searcher` | Literature retrieval, known theorems with hypotheses, search queries | `explorer` |
-| `toy_example` | Construct small/degenerate examples, verify assumptions hold | `explorer` |
-| `counterexample` | Falsify claims by constructing counter-instances | `skeptic` |
-| `decomposer` | Propose multiple subgoal decomposition plans | `mathematician` |
-| `sketcher` | Proof sketches and simple calculations for subgoals | `mathematician` |
-| `verifier` | Check claimed proofs/lemmas step-by-step; verdict HOLDS/GAP/FALSE | `explorer` |
+| Role | Function |
+| --- | --- |
+| `searcher` | Literature retrieval, known theorems with hypotheses, search queries |
+| `toy_example` | Construct small/degenerate examples, verify assumptions hold |
+| `counterexample` | Falsify claims by constructing counter-instances |
+| `decomposer` | Propose multiple subgoal decomposition plans |
+| `sketcher` | Proof sketches and simple calculations for subgoals |
+| `verifier` | Check claimed proofs/lemmas step-by-step; verdict HOLDS/GAP/FALSE |
+
+Every role bills the same shared `[api_keys].keys` pool.
 
 ### Models
 
@@ -103,29 +105,37 @@ one of:
 | `gemini-3.7-flash` | Strongest, most often contended |
 | `gemini-3.6-flash` | |
 | `gemini-3.5-flash` | |
-| `gemini-3.5-flash-lite` | Cheapest, highest availability |
+| `gemini-3.5-flash-lite` | |
+| `gemini-3.1-flash-lite` | Cheapest, highest availability |
 | `adaptive` | Walk the `[adaptive] ladder`, best model first |
 
-The six worker slots map onto three API key pools: `explorer` (searcher, toy_example, verifier), `mathematician` (decomposer, sketcher), and `skeptic` (counterexample).
+The planner, every worker and the baselines all bill the shared
+`[api_keys].keys` pool.
 
-An `adaptive` role tries the strongest model on the ladder. When one answers 429
-or 503 it is demoted for `cooldown_seconds` and the call steps down immediately
-rather than sitting in backoff; once the cooldown lapses that model returns to
-the front and gets probed again, so a run recovers instead of finishing on the
-weakest model. Every switch is logged, and `summary.md` reports which models
-actually served the calls.
+An `adaptive` role tries the strongest model on the ladder. Contention is
+handled by flavor: a quota error (429/rate-limit) rotates to another key at
+the same tier, since a different key may have its own allowance — but if every
+key reports quota exhaustion together, the keys likely share one project quota
+and rotation cannot help, so the run logs that diagnosis and steps down.
+An overload error (503/model saturated) is confirmed on one more key and then
+steps down at once, since no key will work on a saturated tier. A demoted
+model sits out for `cooldown_seconds` and is then probed again, so a run
+recovers instead of finishing on the weakest model. Every switch is logged,
+and `summary.md` reports which models — and which keys — actually served
+the calls.
 
 ### API keys
 
-A role uses its own key, else `[api_keys].default`, else the `GEMINI_API_KEY`
-environment variable. Giving each role its own key keeps one project's quota
-from throttling the whole run. Keys are never printed or written into a run
-directory; the banner shows only a fingerprint such as `set (...1a2b)`.
+Every caller shares one pool, configured as a list:
 
-The six worker slots share three API key pools:
-- `explorer` pool: searcher, toy_example, verifier
-- `mathematician` pool: decomposer, sketcher  
-- `skeptic` pool: counterexample
+```toml
+[api_keys]
+keys = ["first-key", "second-key"]
+```
+
+An empty pool falls back to the `GEMINI_API_KEY` (or `ZAI_API_KEY` for glm)
+environment variable. Keys are never printed or written into a run
+directory; the banner shows only fingerprints such as `set (...1a2b)`.
 
 ## Run
 

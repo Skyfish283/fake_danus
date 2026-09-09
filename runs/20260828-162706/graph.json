@@ -1,0 +1,26 @@
+{
+  "problem": "Consider a branching process representation of an SEIR model. What are some possible ways to approximating the model for low population counts, in the context of partially observed branching processes to use in Bayesian filtering? Consider models such as multinomial models, HMMs, multivariate Poisson. \n\nAn example of a methodology for non small population counts is this paper, which is summarised. This can be inspiration for you. \n\nThis paper develops a Gaussian approximation for the transition function of continuous-time multitype branching processes, enabling fast Bayesian inference via Kalman filtering with computational cost independent of population size. The authors also propose a hybrid method that switches between a particle filter (for small populations) and the Gaussian approximation (for large populations) to balance accuracy and efficiency. The methods are validated on SEIR and SE8I8R epidemic models and applied to COVID-19 data from Victoria, Australia, demonstrating orders-of-magnitude speedups over standard particle filter approaches with minimal bias in posterior distributions when populations are sufficiently large.",
+  "nodes": {
+    "problem": {
+      "id": "problem",
+      "type": "problem",
+      "content": "Consider a branching process representation of an SEIR model. What are some possible ways to approximating the model for low population counts, in the context of partially observed branching processes to use in Bayesian filtering? Consider models such as multinomial models, HMMs, multivariate Poisson. \n\nAn example of a methodology for non small population counts is this paper, which is summarised. This can be inspiration for you. \n\nThis paper develops a Gaussian approximation for the transition function of continuous-time multitype branching processes, enabling fast Bayesian inference via Kalman filtering with computational cost independent of population size. The authors also propose a hybrid method that switches between a particle filter (for small populations) and the Gaussian approximation (for large populations) to balance accuracy and efficiency. The methods are validated on SEIR and SE8I8R epidemic models and applied to COVID-19 data from Victoria, Australia, demonstrating orders-of-magnitude speedups over standard particle filter approaches with minimal bias in posterior distributions when populations are sufficiently large.",
+      "status": "UNVERIFIED",
+      "created_by": "user",
+      "created_at": 1787900226.5397577,
+      "updated_at": 1787900226.539758,
+      "history": []
+    },
+    "paper_1": {
+      "id": "paper_1",
+      "type": "paper",
+      "content": "Paper develops a Gaussian approximation for the transition function of continuous-time multitype branching processes, enabling fast Bayesian inference via Kalman filtering with computational cost independent of population size. Authors propose a hybrid method switching between a particle filter (for small populations) and the Gaussian approximation (for large populations). Validated on SEIR and SE8I8R epidemic models and applied to COVID-19 data.",
+      "status": "PROMISING",
+      "created_by": "planner",
+      "created_at": 1787900315.087561,
+      "updated_at": 1787900315.087562,
+      "history": []
+    }
+  },
+  "edges": []
+}

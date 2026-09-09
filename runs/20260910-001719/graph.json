@@ -1,0 +1,82 @@
+{
+  "problem": "Call a function f : ℝ → ℝ angelic (resp. devilish) if there exist polynomials p and q with real coefficients such that for all real numbers x, f(x) is equal to p(⌊x⌋) + ⌊q(x)⌋ (resp. p(⌊x⌋) + ⌊q(x)⌋).\n \nFind the largest real number c with the following property: given functions f and g that are angelic and devilish respectively, if there is a real number s such that f(s) ≠ g(s), then there is a real number t such that |f(t) - g(t)| ≥ c.",
+  "nodes": {
+    "problem": {
+      "id": "problem",
+      "type": "problem",
+      "content": "Call a function f : ℝ → ℝ angelic (resp. devilish) if there exist polynomials p and q with real coefficients such that for all real numbers x, f(x) is equal to p(⌊x⌋) + ⌊q(x)⌋ (resp. p(⌊x⌋) + ⌊q(x)⌋).\n \nFind the largest real number c with the following property: given functions f and g that are angelic and devilish respectively, if there is a real number s such that f(s) ≠ g(s), then there is a real number t such that |f(t) - g(t)| ≥ c.",
+      "status": "UNVERIFIED",
+      "created_by": "user",
+      "created_at": 1788965239.1182795,
+      "updated_at": 1788965239.1182797,
+      "history": []
+    },
+    "problem_1": {
+      "id": "problem_1",
+      "type": "problem",
+      "content": "Problem Definition: Let f : ℝ → ℝ be angelic (resp. devilish) if there exist polynomials p, q ∈ ℝ[X] such that f(x) = p(⌊x⌋) + ⌊q(x)⌋ (resp. devilish definition, possibly ⌊p(x)⌋ + q(⌊x⌋) or identical). We seek the largest constant c such that if f is angelic, g is devilish, and f(s) ≠ g(s) for some s ∈ ℝ, then there exists t ∈ ℝ with |f(t) - g(t)| ≥ c.",
+      "status": "UNVERIFIED",
+      "created_by": "planner",
+      "created_at": 1788965281.0049827,
+      "updated_at": 1788965281.0049832,
+      "history": []
+    },
+    "idea_1": {
+      "id": "idea_1",
+      "type": "idea",
+      "content": "Interpretation and Variants: In competition mathematics, problems with 'angelic (resp. devilish)' often pair f(x) = p(⌊x⌋) + ⌊q(x)⌋ with g(x) = ⌊p(x)⌋ + q(⌊x⌋) or g(x) = ⌊p(⌊x⌋)⌋ + q(x) or g(x) = p(⌊x⌋) + ⌈q(x)⌉. If f and g both have the form p(⌊x⌋) + ⌊q(x)⌋, we must also examine whether constant differences p_1(x) - p_2(x) = ε are constrained by polynomial rigidity.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1788965281.0201614,
+      "updated_at": 1788965281.020162,
+      "history": []
+    },
+    "obstacle_1": {
+      "id": "obstacle_1",
+      "type": "obstacle",
+      "content": "Under the literal definition in the problem text, angelic and devilish functions are identical: f(x) = p(⌊x⌋) + ⌊q(x)⌋. This leads to c = 0. Indeed, for any ε > 0, we can choose f(x) = ε (with p_1 = ε, q_1 = 0) and g(x) = 0 (with p_2 = 0, q_2 = 0), so f and g are angelic and devilish respectively, but |f(t) - g(t)| = ε < c everywhere.",
+      "status": "OBSTACLE",
+      "created_by": "planner",
+      "created_at": 1788965372.1421032,
+      "updated_at": 1788965372.1421032,
+      "history": []
+    },
+    "hypothesis_1": {
+      "id": "hypothesis_1",
+      "type": "hypothesis",
+      "content": "To make the problem non-trivial, we must assume that the polynomials p and q are non-constant (degree >= 1) or that the definition of devilish is different (e.g., g(x) = ⌊p(x)⌋ + q(⌊x⌋) or g(x) = p(⌊x⌋) + ⌈q(x)⌉) and cannot be trivially made arbitrarily close constants.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1788965372.1492586,
+      "updated_at": 1788965372.1492589,
+      "history": []
+    },
+    "question_1": {
+      "id": "question_1",
+      "type": "question",
+      "content": "Is there a typo in the definition of devilish? The current text defines both angelic and devilish functions as p(⌊x⌋) + ⌊q(x)⌋. Possible correct definitions for devilish g(x) include: (1) ⌊p(x)⌋ + q(⌊x⌋), (2) p(⌊x⌋) + ⌈q(x)⌉, or (3) ⌈p(⌊x⌋) + q(x)⌉.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1788965431.0354087,
+      "updated_at": 1788965431.035409,
+      "history": []
+    },
+    "idea_2": {
+      "id": "idea_2",
+      "type": "idea",
+      "content": "Decomposition plan based on partitioning the degrees of the polynomials P and Q, separating the unbounded asymptotic growth cases from the low-degree constant/linear cases.",
+      "status": "IDEA",
+      "created_by": "planner",
+      "created_at": 1788965451.8244002,
+      "updated_at": 1788965451.8244004,
+      "history": []
+    }
+  },
+  "edges": [
+    {
+      "source": "problem",
+      "target": "question_1",
+      "relation": "related_to"
+    }
+  ]
+}

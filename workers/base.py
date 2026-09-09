@@ -40,31 +40,6 @@ PROMPT_CONFIG_ROLE = {
     "verifier": "worker",
 }
 
-# Which [api_keys] pool each prompt role bills. 
-# For autonomous workers, the key depends on the worker slot index.
-# Each worker slot (0-based) uses worker_1, worker_2, ..., worker_6 keys.
-PROMPT_KEY_ROLE = {
-    "searcher": "worker",  # Will be overridden by slot-specific key in autonomous mode
-    "toy_example": "worker",
-    "counterexample": "worker",
-    "decomposer": "worker",
-    "sketcher": "worker",
-    "verifier": "worker",
-}
-
-
-def get_key_for_worker_slot(slot_index: int) -> str:
-    """Get the API key role name for a worker slot (0-based index).
-    
-    Args:
-        slot_index: The worker slot index (0-based)
-        
-    Returns:
-        The API key role name (e.g., 'worker_1', 'worker_2', etc.)
-    """
-    from ..models import worker_slot_to_key
-    return worker_slot_to_key(slot_index)
-
 # Bounds how many worker calls are in flight at once, independently of how
 # many tasks the planner assigns.
 _semaphore = asyncio.Semaphore(config.MAX_CONCURRENT_WORKERS)
@@ -158,9 +133,8 @@ async def run_worker(
             slot=slot,
         )
 
-    # Billing follows the assigned role, not the slot; the explorer pool is
-    # the fallback (verifier has no key of its own).
-    key_role = PROMPT_KEY_ROLE[role]
+    # Every call bills the shared [api_keys].keys pool; the client rotates
+    # keys on contention before stepping down the model ladder.
     config_role = PROMPT_CONFIG_ROLE[role]
     started = time.monotonic()
     try:
@@ -168,7 +142,6 @@ async def run_worker(
             content = await generate(
                 build_worker_prompt(problem, context, task),
                 role=role,
-                key_role=key_role,
                 model=config.WORKER_MODELS[config_role],
                 system_instruction=WORKER_PROMPTS[role],
                 thinking_level=config.WORKER_THINKING_LEVELS[config_role],
@@ -239,17 +212,7 @@ async def run_autonomous_worker(
     started = time.monotonic()
     skill_calls: list[SkillCall] = []
     progress_history: list[str] = []
-    
-    # Determine the API key role for this worker slot
-    # Extract slot index from slot name (e.g., "flex_1" -> 0, "flex_2" -> 1)
-    slot_index = 0
-    if slot.startswith("flex_"):
-        try:
-            slot_index = int(slot.split("_")[1]) - 1
-        except (ValueError, IndexError):
-            slot_index = 0
-    worker_key_role = get_key_for_worker_slot(slot_index)
-    
+
     try:
         async with _semaphore:
             for iteration in range(max_iterations):
@@ -260,12 +223,10 @@ async def run_autonomous_worker(
                     task=task,
                     progress_history=progress_history,
                 )
-                
-                # Get worker's decision using slot-specific API key
+
                 decision_text = await generate(
                     prompt,
                     role="searcher",
-                    key_role=worker_key_role,
                     model=config.WORKER_MODELS["worker"],
                     system_instruction=AUTONOMOUS_WORKER_SYSTEM_PROMPT,
                     thinking_level=config.WORKER_THINKING_LEVELS["worker"],
@@ -318,7 +279,6 @@ async def run_autonomous_worker(
                     skill_output = await generate(
                         build_worker_prompt(problem, context, skill_input),
                         role=skill_choice,
-                        key_role=PROMPT_KEY_ROLE[skill_choice],
                         model=config.WORKER_MODELS[PROMPT_CONFIG_ROLE[skill_choice]],
                         system_instruction=WORKER_PROMPTS[skill_choice],
                         thinking_level=config.WORKER_THINKING_LEVELS[PROMPT_CONFIG_ROLE[skill_choice]],

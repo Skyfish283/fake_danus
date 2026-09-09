@@ -1,0 +1,52 @@
+# Effective configuration for this run. API keys are redacted.
+# Source: C:\Users\samfe\OneDrive\Desktop\math_agent\run_config.toml
+
+[run]
+mode = "main"
+problem = "Explore different applications and ways to classify MCMC algorithms using a resolvent method. Specifically, think about how we can do this when we do not know the posterior distribution. ie, how can we use the concept of resolvency to perhaps improve convergene rates, identify when we have metastability, etc..."
+tag = ""
+resume = ""
+
+[budget]
+max_planner_calls = 1000
+max_worker_calls = 1000
+max_wall_clock_seconds = 1800
+max_concurrent_workers = 6
+
+[models]
+planner = "adaptive"
+explorer = "adaptive"
+mathematician = "adaptive"
+skeptic = "adaptive"
+verifier = "adaptive"
+baseline = "adaptive"
+
+[thinking]
+planner = "HIGH"
+explorer = "HIGH"
+mathematician = "HIGH"
+skeptic = "HIGH"
+verifier = "HIGH"
+baseline = "HIGH"
+
+[api_keys]
+default = "set (...WRQw)"
+planner = "set (...Kf7w)"
+explorer = "set (...vd7Y)"
+mathematician = "set (...wlqw)"
+skeptic = "set (...OsMA)"
+baseline = "not set"
+
+[adaptive]
+ladder = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
+cooldown_seconds = 180
+
+[literature]
+openalex_mailto = "math-agent-prototype@example.com"
+search_result_limit = 8
+
+[viewer]
+enabled = true
+port = 8765
+open_browser = true
+poll_ms = 1000

@@ -175,9 +175,9 @@ async def _arm_b_worker(role: str, problem: str, log: RunLog) -> tuple[str, str]
         text = await generate(
             build_worker_prompt(problem, "", ARM_B_TASKS[role]),
             role=f"baseline_b_{role}",
-            model=config.WORKER_MODELS[role],
+            model=config.WORKER_MODELS["worker"],
             system_instruction=ARM_B_PROMPTS[role],
-            thinking_level=config.WORKER_THINKING_LEVELS[role],
+            thinking_level=config.WORKER_THINKING_LEVELS["worker"],
             max_output_tokens=config.WORKER_MAX_OUTPUT_TOKENS,
         )
     except Exception as exc:  # noqa: BLE001 - one arm failing should not lose the rest
@@ -248,9 +248,9 @@ def options_from_args(args: argparse.Namespace) -> RunOptions:
 
 
 async def run(options: RunOptions) -> int:
-    roles = ("baseline",) if options.mode == "baseline_a" else ("baseline",) + ARM_B_ROLES
+    roles = ("baseline",) if options.mode == "baseline_a" else ("worker", "baseline")
     try:
-        config.require_api_keys(roles)
+        config.require_api_keys()
     except config.MissingAPIKey as exc:
         print(exc, file=sys.stderr)
         return 1
